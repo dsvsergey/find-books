@@ -15,7 +15,7 @@ go build -o findbooks ./cmd/findbooks
 ```bash
 findbooks add '/Volumes/dsvDev/Library/Soviet Sci-Fi'   # register and index
 findbooks                                               # interactive search and library management
-findbooks search чужие дети                             # search from the command line ("alien children")
+findbooks search чужие дети                             # search from the command line ("Other People's Children")
 findbooks search --author pidorenko --json
 findbooks update --all                                  # re-index changed files
 findbooks list
