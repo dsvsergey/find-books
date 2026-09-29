@@ -1,0 +1,90 @@
+package tui
+
+import (
+	"strings"
+	"unicode/utf8"
+
+	"charm.land/lipgloss/v2"
+	"github.com/charmbracelet/x/ansi"
+
+	"findbooks/internal/fb2"
+	"findbooks/internal/i18n"
+)
+
+// previewMaxWidth caps the text column so long lines stay readable.
+const previewMaxWidth = 100
+
+const blockIndent = "    "
+
+var styleItalic = lipgloss.NewStyle().Italic(true)
+
+// wrap splits text into lines: the first at most first cells wide, the
+// others at most rest; a word longer than its line is cut.
+func wrap(text string, first, rest int) []string {
+	var lines []string
+	limit, cur := first, ""
+	for _, w := range strings.Fields(text) {
+		if cur != "" && ansi.StringWidth(cur)+1+ansi.StringWidth(w) > limit {
+			lines = append(lines, cur)
+			cur, limit = "", rest
+		}
+		for cur == "" && ansi.StringWidth(w) > limit {
+			head := ansi.Truncate(w, limit, "")
+			if head == "" { // a wide rune does not fit: take it anyway
+				_, size := utf8.DecodeRuneInString(w)
+				head = w[:size]
+			}
+			lines = append(lines, head)
+			w, limit = w[len(head):], rest
+		}
+		if w == "" {
+			continue
+		}
+		if cur != "" {
+			cur += " "
+		}
+		cur += w
+	}
+	if cur != "" || len(lines) == 0 {
+		lines = append(lines, cur)
+	}
+	return lines
+}
+
+// renderBlocks lays the blocks out as lines at most width cells wide.
+func renderBlocks(blocks []fb2.Block, width int) string {
+	width = max(20, width)
+	inner := width - len(blockIndent)
+	var out []string
+	prevTitle := false
+	for _, b := range blocks {
+		isTitle := b.Kind == fb2.BlockTitle
+		if isTitle && !prevTitle && len(out) > 0 {
+			out = append(out, "")
+		}
+		prevTitle = isTitle
+		switch b.Kind {
+		case fb2.BlockEmpty:
+			out = append(out, "")
+		case fb2.BlockImage:
+			out = append(out, blockIndent+styleDim.Render(i18n.T(i18n.KeyIllustration)))
+		case fb2.BlockTitle, fb2.BlockSubtitle:
+			for _, l := range wrap(b.Text, width, width) {
+				out = append(out, styleTitle.Render(l))
+			}
+		case fb2.BlockEpigraph, fb2.BlockCite:
+			for _, l := range wrap(b.Text, inner, inner) {
+				out = append(out, blockIndent+styleItalic.Render(l))
+			}
+		case fb2.BlockPoemLine:
+			for _, l := range wrap(b.Text, inner, inner) {
+				out = append(out, blockIndent+l)
+			}
+		default:
+			ls := wrap(b.Text, inner, width)
+			ls[0] = blockIndent + ls[0]
+			out = append(out, ls...)
+		}
+	}
+	return strings.Join(out, "\n")
+}

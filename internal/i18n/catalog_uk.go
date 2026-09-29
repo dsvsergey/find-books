@@ -83,7 +83,7 @@ var catalogUK = map[Key]string{
 	KeyPathCopied:               "Шлях скопійовано",
 	KeyDiskOfflineOpen:          "Диск «%s» не підключено — підключіть його, щоб відкрити файл",
 	KeyFileNotFound:             "Файл не знайдено: %s",
-	KeySearchHelp:               "enter відкрити · ctrl+l бібліотеки · ctrl+o показати у Finder · ctrl+y копіювати шлях · tab за автором · ↑/↓ вибір · esc вихід",
+	KeySearchHelp:               "enter відкрити · ctrl+r переглянути · ctrl+l бібліотеки · ctrl+o показати у Finder · ctrl+y копіювати шлях · tab за автором · ↑/↓ вибір · esc вихід",
 	KeyLangToggle:               "ctrl+g → EN",
 	KeyHitsCount:                "%d з %d",
 	KeySearchError:              "Помилка пошуку: %s",
@@ -94,4 +94,11 @@ var catalogUK = map[Key]string{
 	KeyLabelFile:                "Файл:",
 	KeyLabelContents:            "Зміст:",
 	KeyLangSaveFailed:           "Не вдалося зберегти мову: %s",
+
+	KeyPreviewLoading:     "Завантаження…",
+	KeyPreviewUnsupported: "Перегляд для %s недоступний — enter відкриє у програмі",
+	KeyPreviewFailed:      "Не вдалося прочитати: %s",
+	KeyPreviewStale:       "⚠ Файл змінився після індексації — показано найближчий збіг",
+	KeyPreviewHelp:        "↑/↓ pgup/pgdn space home/end прокрутка · enter відкрити · ctrl+o показати у Finder · ctrl+y копіювати шлях · esc назад",
+	KeyIllustration:       "[ілюстрація]",
 }

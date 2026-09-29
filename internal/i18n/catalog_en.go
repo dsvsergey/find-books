@@ -83,7 +83,7 @@ var catalogEN = map[Key]string{
 	KeyPathCopied:               "Path copied",
 	KeyDiskOfflineOpen:          "Disk «%s» is not mounted — connect it to open the file",
 	KeyFileNotFound:             "File not found: %s",
-	KeySearchHelp:               "enter open · ctrl+l libraries · ctrl+o show in Finder · ctrl+y copy path · tab by author · ↑/↓ select · esc quit",
+	KeySearchHelp:               "enter open · ctrl+r preview · ctrl+l libraries · ctrl+o show in Finder · ctrl+y copy path · tab by author · ↑/↓ select · esc quit",
 	KeyLangToggle:               "ctrl+g → УКР",
 	KeyHitsCount:                "%d of %d",
 	KeySearchError:              "Search error: %s",
@@ -94,4 +94,11 @@ var catalogEN = map[Key]string{
 	KeyLabelFile:                "File:",
 	KeyLabelContents:            "Contents:",
 	KeyLangSaveFailed:           "Could not save the language: %s",
+
+	KeyPreviewLoading:     "Loading…",
+	KeyPreviewUnsupported: "Preview is not available for %s — enter opens it in an app",
+	KeyPreviewFailed:      "Could not read: %s",
+	KeyPreviewStale:       "⚠ The file changed after indexing — showing the closest match",
+	KeyPreviewHelp:        "↑/↓ pgup/pgdn space home/end scroll · enter open · ctrl+o show in Finder · ctrl+y copy path · esc back",
+	KeyIllustration:       "[illustration]",
 }
