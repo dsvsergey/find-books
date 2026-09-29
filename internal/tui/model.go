@@ -85,8 +85,10 @@ type Model struct {
 	libOnline     map[string]bool
 	libCursor     int
 	confirmDelete bool
-	choosing      bool // waiting for the Finder folder dialog to resolve
-	quitting      bool // ctrl+c pressed during a job; quit once it stops
+	choosing      bool  // waiting for the Finder folder dialog to resolve
+	removing      bool  // waiting for a removeLibrary to resolve
+	quitting      bool  // ctrl+c pressed during a job; quit once it stops
+	selectLibID   int64 // select this library the next time librariesMsg loads
 	job           *job
 	bar           progress.Model
 

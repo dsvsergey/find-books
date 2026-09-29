@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	libHelp      = "a додати · u оновити · d прибрати · ↑/↓ вибір · esc до пошуку"
+	libHelpBase  = "a додати · u оновити · d прибрати · ↑/↓ вибір"
 	libHelpEmpty = "a додати бібліотеку · esc вихід"
 )
 
@@ -58,9 +58,13 @@ func (m Model) renderLibraries() string {
 	if m.status != "" {
 		b.WriteString("\n" + styleStatus.Render(m.status) + "\n")
 	}
-	help := libHelp
-	if m.total == 0 {
-		help = libHelpEmpty
+	help := libHelpEmpty
+	if len(m.libs) > 0 {
+		esc := "esc до пошуку"
+		if m.total == 0 {
+			esc = "esc вихід"
+		}
+		help = libHelpBase + " · " + esc
 	}
 	b.WriteString("\n" + styleDim.Render(ansi.Truncate(help, w, "…")))
 	return b.String()

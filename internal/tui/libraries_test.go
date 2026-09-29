@@ -228,8 +228,9 @@ func TestAddExistingLibrary(t *testing.T) {
 	m := libModel(fb, 0, "/Volumes/dsvDev/Книги", nil)
 	m, cmd := press(m, "a")
 	m = drain(t, m, cmd)
-	if !strings.Contains(m.(Model).status, "Бібліотека «Книги» уже є") {
-		t.Fatalf("status = %q", m.(Model).status)
+	st := m.(Model).status
+	if !strings.Contains(st, "уже є") || !strings.Contains(st, "--name") {
+		t.Fatalf("status = %q", st)
 	}
 }
 
@@ -352,6 +353,7 @@ func TestFolderMsgIgnoredWhileJobRunning(t *testing.T) {
 	if realJob == nil {
 		t.Fatal("job must be running")
 	}
+	t.Cleanup(realJob.cancel) // unblock the goroutine parked on <-ctx.Done()
 
 	m, _ = m.Update(folderMsg{path: "/Volumes/dsvDev/Інша"})
 	mm := m.(Model)
@@ -378,6 +380,7 @@ func TestStaleJobDoneMsgIgnored(t *testing.T) {
 	if realJob == nil {
 		t.Fatal("job must be running")
 	}
+	t.Cleanup(realJob.cancel) // unblock the goroutine parked on <-ctx.Done()
 	before := mm.status
 
 	// A jobDoneMsg tagged with a different *job simulates a message that
@@ -396,6 +399,10 @@ func TestStaleJobDoneMsgIgnored(t *testing.T) {
 // --- fix round 1: quitting mid-job waits for the scan to stop ---
 
 func TestCtrlCDuringJobWaitsForStop(t *testing.T) {
+	old := quitTimeout
+	quitTimeout = 5 * time.Millisecond
+	t.Cleanup(func() { quitTimeout = old })
+
 	fb := &fakeLibs{}
 	fb.addFn = func(ctx context.Context, _ string, on func(scan.Progress)) (index.Library, scan.Report, error) {
 		on(scan.Progress{Done: 1, Total: 10})
@@ -416,6 +423,9 @@ func TestCtrlCDuringJobWaitsForStop(t *testing.T) {
 	}
 	if m.(Model).job == nil {
 		t.Fatal("the job must stay tracked until it actually finishes")
+	}
+	if !strings.Contains(m.(Model).status, "Зупиняю індексацію") {
+		t.Fatalf("status = %q", m.(Model).status)
 	}
 
 	_, doneCmd := m.Update(cmd()) // jobDoneMsg, delivered once the canceled job returns
@@ -479,5 +489,161 @@ func TestAddCanceledBeforeRegistering(t *testing.T) {
 	m, _ = m.Update(cmd())   // jobDoneMsg after cancel
 	if !strings.Contains(m.(Model).status, "Додавання «Книги» перервано") {
 		t.Fatalf("status = %q", m.(Model).status)
+	}
+}
+
+// --- fix round 2: FW-1 stale TOC cache ---
+
+func TestJobDoneClearsTOCCache(t *testing.T) {
+	fb := &fakeLibs{}
+	fb.addFn = func(_ context.Context, dir string, on func(scan.Progress)) (index.Library, scan.Report, error) {
+		lib := index.Library{ID: 2, Name: "Книги"}
+		fb.libs = append(fb.libs, lib)
+		fb.total = 5
+		return lib, scan.Report{Added: 2}, nil
+	}
+	mm := libModel(fb, 0, "/Volumes/dsvDev/Книги", nil).(Model)
+	mm.toc = map[int64][]string{99: {"stale"}}
+	m, cmd := press(mm, "a")
+	m = drain(t, m, cmd)
+	if len(m.(Model).toc) != 0 {
+		t.Fatalf("toc = %v, want empty after jobDoneMsg", m.(Model).toc)
+	}
+}
+
+func TestRemovedClearsTOCCache(t *testing.T) {
+	fb := &fakeLibs{libs: []index.Library{fantastika}, total: 23251}
+	m := libModel(fb, 23251, "", nil)
+	m, cmd := press(m, "ctrl+l")
+	m = drain(t, m, cmd)
+	mm := m.(Model)
+	mm.toc = map[int64][]string{99: {"stale"}}
+	m, _ = press(mm, "d")
+	m, cmd = press(m, "y")
+	m = drain(t, m, cmd)
+	if len(m.(Model).toc) != 0 {
+		t.Fatalf("toc = %v, want empty after removedMsg", m.(Model).toc)
+	}
+}
+
+// --- fix round 2: FW-2 the Finder dialog is invisible in the TUI ---
+
+func TestChoosingShowsFinderStatus(t *testing.T) {
+	fb := &fakeLibs{}
+	m := libModel(fb, 0, "", nil)
+	m, cmd := press(m, "a")
+	if cmd == nil {
+		t.Fatal("a must start the folder chooser")
+	}
+	if !strings.Contains(m.View().Content, "Виберіть теку у вікні Finder") {
+		t.Fatalf("view:\n%s", m.View().Content)
+	}
+}
+
+func TestChoosingStatusClearedOnCancel(t *testing.T) {
+	fb := &fakeLibs{}
+	m := libModel(fb, 0, "", platform.ErrCanceled)
+	m, cmd := press(m, "a")
+	if !strings.Contains(m.View().Content, "Виберіть теку у вікні Finder") {
+		t.Fatalf("view before resolving:\n%s", m.View().Content)
+	}
+	m = drain(t, m, cmd)
+	if m.(Model).status != "" {
+		t.Fatalf("status = %q, want cleared after a canceled folderMsg", m.(Model).status)
+	}
+}
+
+// --- fix round 2: FW-3 no guard during removal ---
+
+func TestRemovingBlocksOtherKeys(t *testing.T) {
+	fb := &fakeLibs{libs: []index.Library{fantastika}, total: 23251}
+	rescanCalled := false
+	fb.rescanFn = func(context.Context, index.Library, func(scan.Progress)) (scan.Report, error) {
+		rescanCalled = true
+		return scan.Report{}, nil
+	}
+	m := libModel(fb, 23251, "", nil)
+	m, cmd := press(m, "ctrl+l")
+	m = drain(t, m, cmd)
+
+	m, _ = press(m, "d")
+	m, removeCmd := press(m, "y")
+	if removeCmd == nil {
+		t.Fatal("y must start the removal")
+	}
+	if !m.(Model).removing {
+		t.Fatal("removing must be set while removeLibrary is pending")
+	}
+	if !strings.Contains(m.(Model).status, "Прибираю") {
+		t.Fatalf("status = %q", m.(Model).status)
+	}
+
+	m, uCmd := press(m, "u")
+	if uCmd != nil || rescanCalled {
+		t.Fatal("u must be ignored (and start no rescan) while removing is pending")
+	}
+
+	m, _ = press(m, "d")
+	if m.(Model).confirmDelete {
+		t.Fatal("d must not open a confirmation while removing is pending")
+	}
+
+	m = drain(t, m, removeCmd)
+	if m.(Model).removing {
+		t.Fatal("removing must clear once removedMsg arrives")
+	}
+	if _, aCmd := press(m, "a"); aCmd == nil {
+		t.Fatal("keys must work again after removedMsg")
+	}
+}
+
+// --- fix round 2: FW-4 cheap minors ---
+
+func TestHelpShowsUpdateWhenLibraryExistsButIndexEmpty(t *testing.T) {
+	fb := &fakeLibs{libs: []index.Library{fantastika}, total: 0}
+	m := libModel(fb, 0, "", nil)
+	m = drain(t, m, m.Init())
+	out := m.View().Content
+	if !strings.Contains(out, "u оновити") {
+		t.Fatalf("view lacks %q:\n%s", "u оновити", out)
+	}
+	if !strings.Contains(out, "esc вихід") {
+		t.Fatalf("view lacks %q:\n%s", "esc вихід", out)
+	}
+}
+
+func TestUppercaseAliases(t *testing.T) {
+	fb := &fakeLibs{libs: []index.Library{fantastika}, total: 23251}
+	called := false
+	fb.rescanFn = func(context.Context, index.Library, func(scan.Progress)) (scan.Report, error) {
+		called = true
+		return scan.Report{}, nil
+	}
+	m := libModel(fb, 23251, "", nil)
+	m, cmd := press(m, "ctrl+l")
+	m = drain(t, m, cmd)
+	m, cmd = press(m, "U")
+	m = drain(t, m, cmd)
+	if !called {
+		t.Fatal("U must act like u (rescan)")
+	}
+}
+
+func TestAddSelectsNewLibrary(t *testing.T) {
+	fb := &fakeLibs{libs: []index.Library{fantastika}, total: fantastika.Works}
+	fb.addFn = func(_ context.Context, dir string, on func(scan.Progress)) (index.Library, scan.Report, error) {
+		lib := index.Library{ID: 2, Name: "Книги", Works: 5}
+		fb.libs = append(fb.libs, lib)
+		fb.total += 5
+		return lib, scan.Report{Added: 2}, nil
+	}
+	m := libModel(fb, fantastika.Works, "/Volumes/dsvDev/Книги", nil)
+	m, cmd := press(m, "ctrl+l")
+	m = drain(t, m, cmd)
+	m, cmd = press(m, "a")
+	m = drain(t, m, cmd)
+	mm := m.(Model)
+	if len(mm.libs) != 2 || mm.libCursor != 1 || mm.libs[mm.libCursor].ID != 2 {
+		t.Fatalf("libCursor = %d, libs = %+v", mm.libCursor, mm.libs)
 	}
 }

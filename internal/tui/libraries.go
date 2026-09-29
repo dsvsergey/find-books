@@ -21,7 +21,9 @@ const choosePrompt = "Виберіть теку бібліотеки"
 // finished stopping in time; it forces the quit rather than hanging forever.
 type quitTimeoutMsg struct{}
 
-const quitTimeout = 3 * time.Second
+// quitTimeout is a var so tests can shrink it instead of waiting out the
+// real duration.
+var quitTimeout = 3 * time.Second
 
 type librariesMsg struct {
 	libs   []index.Library
@@ -67,7 +69,11 @@ type job struct {
 }
 
 // keyAliases maps Ukrainian-layout keys to the Latin keys of the libraries screen.
-var keyAliases = map[string]string{"ф": "a", "г": "u", "в": "d", "н": "y", "Ф": "a", "Г": "u", "В": "d", "Н": "y", "Y": "y"}
+var keyAliases = map[string]string{
+	"ф": "a", "г": "u", "в": "d", "н": "y",
+	"Ф": "a", "Г": "u", "В": "d", "Н": "y", "Y": "y",
+	"A": "a", "U": "u", "D": "d",
+}
 
 func (m Model) loadLibraries() tea.Cmd {
 	b, root := m.b, m.act.Root
@@ -152,6 +158,15 @@ func (m Model) updateLibraries(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		m.libs, m.libOnline, m.total = msg.libs, msg.online, msg.total
 		m.libCursor = min(m.libCursor, max(0, len(m.libs)-1))
+		if m.selectLibID != 0 {
+			for i, l := range m.libs {
+				if l.ID == m.selectLibID {
+					m.libCursor = i
+					break
+				}
+			}
+			m.selectLibID = 0
+		}
 		return m, nil
 	case folderMsg:
 		m.choosing = false
@@ -163,6 +178,7 @@ func (m Model) updateLibraries(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		switch {
 		case errors.Is(msg.err, platform.ErrCanceled):
+			m.status = ""
 			return m, nil
 		case errors.Is(msg.err, platform.ErrUnsupported):
 			m.status = "Діалог вибору теки недоступний — використайте: findbooks add <шлях>"
@@ -183,17 +199,27 @@ func (m Model) updateLibraries(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.job.progress = msg.p
 		return m, listen(m.job.ch)
 	case jobDoneMsg:
-		if msg.j != m.job {
+		if msg.j == nil || msg.j != m.job {
 			return m, nil
 		}
 		m.job.cancel()
 		m.job = nil
+		// The just-finished job may have added, rescanned or removed books;
+		// SQLite reuses a deleted book's ID, so a stale m.toc entry could
+		// show another book's contents.
+		m.toc = map[int64][]string{}
 		if m.quitting {
 			return m, tea.Quit
 		}
 		m.status = jobStatus(msg)
+		if msg.adding && msg.lib.ID != 0 && msg.err == nil {
+			m.selectLibID = msg.lib.ID
+		}
 		return m, m.loadLibraries()
 	case removedMsg:
+		m.removing = false
+		// See the jobDoneMsg case above: IDs get reused after a delete.
+		m.toc = map[int64][]string{}
 		if msg.err != nil {
 			m.status = "Помилка: " + msg.err.Error()
 		} else {
@@ -213,6 +239,7 @@ func (m Model) libraryKey(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		if m.job != nil {
 			m.job.cancel()
 			m.quitting = true
+			m.status = "Зупиняю індексацію…"
 			return m, tea.Tick(quitTimeout, func(time.Time) tea.Msg { return quitTimeoutMsg{} })
 		}
 		return m, tea.Quit
@@ -220,6 +247,11 @@ func (m Model) libraryKey(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	if m.choosing {
 		// The Finder dialog is pending (it runs outside our event loop);
 		// every other key is ignored until it resolves into a folderMsg.
+		return m, nil
+	}
+	if m.removing {
+		// A removeLibrary call is pending; every other key is ignored until
+		// it resolves into a removedMsg.
 		return m, nil
 	}
 	if m.job != nil {
@@ -232,6 +264,8 @@ func (m Model) libraryKey(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	if m.confirmDelete {
 		m.confirmDelete = false
 		if l := m.selectedLib(); key == "y" && l != nil {
+			m.removing = true
+			m.status = fmt.Sprintf("Прибираю «%s»…", l.Name)
 			return m, m.removeLibrary(l.Name)
 		}
 		m.status = "Скасовано"
@@ -253,7 +287,7 @@ func (m Model) libraryKey(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	case "down":
 		m.libCursor = max(0, min(len(m.libs)-1, m.libCursor+1))
 	case "a":
-		m.status = ""
+		m.status = "Виберіть теку у вікні Finder… (Cancel — скасувати)"
 		m.choosing = true
 		return m, m.chooseFolder()
 	case "u":
@@ -286,7 +320,7 @@ func jobStatus(d jobDoneMsg) string {
 	case d.adding && errors.Is(d.err, context.Canceled):
 		return fmt.Sprintf("Додавання «%s» перервано", d.name)
 	case errors.Is(d.err, index.ErrExists):
-		return fmt.Sprintf("Бібліотека «%s» уже є", d.name)
+		return fmt.Sprintf("Бібліотека з такою назвою або шляхом уже є («%s») — іншу назву можна задати: findbooks add --name <назва> <шлях>", d.name)
 	case errors.Is(d.err, libman.ErrOffline):
 		return fmt.Sprintf("Диск «%s» не підключено", d.lib.VolumeName)
 	case errors.Is(d.err, context.Canceled):
