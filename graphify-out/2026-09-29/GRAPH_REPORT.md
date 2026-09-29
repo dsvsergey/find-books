@@ -1,16 +1,16 @@
 # Graph Report - find-books  (2026-09-29)
 
 ## Corpus Check
-- 88 files · ~78,750 words
+- 95 files · ~84,811 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 769 nodes · 1645 edges · 55 communities (38 shown, 17 thin omitted)
-- Extraction: 84% EXTRACTED · 16% INFERRED · 0% AMBIGUOUS · INFERRED: 257 edges (avg confidence: 0.8)
+- 845 nodes · 1787 edges · 52 communities (36 shown, 16 thin omitted)
+- Extraction: 84% EXTRACTED · 16% INFERRED · 0% AMBIGUOUS · INFERRED: 287 edges (avg confidence: 0.8)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `bfa9e665`
+- Built from commit: `824f27e6`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -60,21 +60,18 @@
 - [[_COMMUNITY_Task 2 & 3 Implementation Report|Task 2 & 3 Implementation Report]]
 - [[_COMMUNITY_NewRootCmd|NewRootCmd]]
 - [[_COMMUNITY_newAddCmd|newAddCmd]]
-- [[_COMMUNITY_newSearchCmd|newSearchCmd]]
-- [[_COMMUNITY_newListCmd|newListCmd]]
-- [[_COMMUNITY_.renderLibraries|.renderLibraries]]
 
 ## God Nodes (most connected - your core abstractions)
 1. `libModel()` - 37 edges
-2. `Errorf()` - 35 edges
-3. `press()` - 33 edges
-4. `drain()` - 32 edges
-5. `T()` - 30 edges
-6. `New()` - 27 edges
+2. `T()` - 36 edges
+3. `Errorf()` - 35 edges
+4. `press()` - 33 edges
+5. `drain()` - 32 edges
+6. `New()` - 29 edges
 7. `Library` - 25 edges
-8. `Hit` - 20 edges
-9. `Run()` - 19 edges
-10. `run()` - 17 edges
+8. `Hit` - 23 edges
+9. `searched()` - 21 edges
+10. `Model` - 20 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `main()` --calls--> `Execute()`  [INFERRED]
@@ -83,35 +80,35 @@
   internal/platform/platform_darwin.go → internal/i18n/i18n.go
 - `newAddCmd()` --calls--> `runScan()`  [INFERRED]
   internal/cli/add.go → internal/cli/progress.go
-- `newAddCmd()` --calls--> `closeStore()`  [INFERRED]
-  internal/cli/add.go → internal/cli/root.go
-- `newAddCmd()` --calls--> `exactArgs()`  [INFERRED]
-  internal/cli/add.go → internal/cli/root.go
+- `newAddCmd()` --calls--> `T()`  [INFERRED]
+  internal/cli/add.go → internal/i18n/i18n.go
+- `newAddCmd()` --calls--> `Register()`  [INFERRED]
+  internal/cli/add.go → internal/libman/libman.go
 
 ## Import Cycles
 - None detected.
 
-## Communities (55 total, 17 thin omitted)
+## Communities (52 total, 16 thin omitted)
 
 ### Community 0 - "NewRootCmd"
-Cohesion: 0.15
-Nodes (10): app, Command, newRemoveCmd(), closeStore(), Store, Command, newUpdateCmd(), DataDir() (+2 more)
+Cohesion: 0.12
+Nodes (25): tw, Work, Section, allKnown(), containsAll(), hasGivenName(), isNoise(), matchAuthor() (+17 more)
 
 ### Community 1 - "Parse"
-Cohesion: 0.06
-Nodes (55): Builder, Decoder, tw, Work, Author, Book, Section, allKnown() (+47 more)
+Cohesion: 0.07
+Nodes (38): Builder, Decoder, Author, Block, BlockKind, Book, attr(), charsetReader() (+30 more)
 
 ### Community 2 - "Hit"
-Cohesion: 0.19
-Nodes (10): Cmd, job, Msg, Model, Backend, langSavedMsg, resultsMsg, screen (+2 more)
+Cohesion: 0.06
+Nodes (30): Hit, Query, T(), Store, MatchExpr(), Model, Cmd, job (+22 more)
 
 ### Community 3 - "model_test.go"
-Cohesion: 0.17
-Nodes (30): New(), Cmd, KeyPressMsg, Model, T, key(), newModel(), searched() (+22 more)
+Cohesion: 0.15
+Nodes (40): New(), Cmd, KeyPressMsg, Model, T, key(), newModel(), searched() (+32 more)
 
 ### Community 4 - "Task 7: Incremental Parallel Library Scanning"
 Cohesion: 0.07
-Nodes (40): CancelFunc, Library, Context, Store, Register(), Scan(), Store, T (+32 more)
+Nodes (44): CancelFunc, Library, Context, Store, Register(), Scan(), Store, T (+36 more)
 
 ### Community 5 - "scan.go"
 Cohesion: 0.11
@@ -126,20 +123,20 @@ Cohesion: 0.15
 Nodes (52): Current(), ansiStrip(), ctrlG(), Cmd, Model, T, TestCtrlGClearsStatus(), TestCtrlGIgnoredWhileChoosing() (+44 more)
 
 ### Community 8 - "Task 5 Implementation Report: SQLite FTS5 Store"
-Cohesion: 0.10
-Nodes (17): DB, Key, Lang, localizedError, Errorf(), Parse(), Set(), T (+9 more)
+Cohesion: 0.09
+Nodes (19): langSource, DB, Key, Lang, localizedError, resolveLang(), Errorf(), Parse() (+11 more)
 
 ### Community 9 - "mustHits"
-Cohesion: 0.44
-Nodes (3): T(), Model, View
+Cohesion: 0.11
+Nodes (18): Concerns, Files changed, Files changed (this round), Finding (from task review, Important, plan-mandated), Fix applied (per controller ruling), Fix round 1 — panic-recovery path untested, GREEN, GREEN (+10 more)
 
 ### Community 10 - "Task 1 Report: Module Scaffold and Platform Package"
-Cohesion: 0.11
-Nodes (32): Block, BlockKind, Hit, Query, blockKind(), parser, ParseTextFile(), Store (+24 more)
+Cohesion: 0.26
+Nodes (20): changed(), Load(), Supported(), chuzhieHit(), T, TestLoadChangedFileIsStale(), TestLoadEmptyBookTitleUsesFileStem(), TestLoadNotCollectionShowsWholeBook() (+12 more)
 
 ### Community 11 - "Task 6 Report: Прив'язка бібліотеки до тому"
-Cohesion: 0.19
-Nodes (23): langSource, copyFixture(), T, newLibrary(), run(), skipUnlessDarwin(), TestAddArgCountError(), TestAddDuplicateName() (+15 more)
+Cohesion: 0.16
+Nodes (25): scanIncomplete, scanIncompleteError(), copyFixture(), T, newLibrary(), run(), skipUnlessDarwin(), TestAddArgCountError() (+17 more)
 
 ### Community 12 - "Task 2: textnorm Package Implementation Report"
 Cohesion: 0.22
@@ -174,8 +171,8 @@ Cohesion: 0.14
 Nodes (13): extract, fb2, findbooks — перегляд тексту твору в TUI, i18n, index, preview (новий пакет), tui, Компоненти (+5 more)
 
 ### Community 20 - "cli_test.go"
-Cohesion: 0.31
-Nodes (11): FilePath(), Locate(), relToMount(), Root(), T, skipUnlessDarwin(), TestFilePathJoinsSlashPath(), TestLocateAndRootRoundTrip() (+3 more)
+Cohesion: 0.18
+Nodes (10): Concerns, Deviations from the brief, Files changed, GREEN, RED, Self-review findings, Task 6 report — tui: екран перегляду, TDD Evidence (+2 more)
 
 ### Community 22 - "Model"
 Cohesion: 0.15
@@ -202,40 +199,32 @@ Cohesion: 0.11
 Nodes (17): Concerns, GREEN (Passing Test), GREEN (Passing Test), Implementation Details, Implementation Details, RED (Failing Test), RED (Failing Test), Self-Review Findings (+9 more)
 
 ### Community 48 - "NewRootCmd"
-Cohesion: 0.17
-Nodes (13): main(), Command, newConfigCmd(), exactArgs(), Execute(), exitCode(), Command, Writer (+5 more)
+Cohesion: 0.06
+Nodes (45): app, jsonHit, main(), Command, newAddCmd(), Command, newConfigCmd(), Command (+37 more)
 
 ### Community 51 - "newAddCmd"
-Cohesion: 0.25
-Nodes (6): scanIncomplete, Command, newAddCmd(), scanIncompleteError(), TestExitCode(), TestScanIncompleteErrorMessage()
-
-### Community 52 - "newSearchCmd"
-Cohesion: 0.43
-Nodes (6): jsonHit, Command, Writer, newSearchCmd(), writeJSON(), writeTable()
-
-### Community 53 - "newListCmd"
-Cohesion: 0.67
-Nodes (3): Command, newListCmd(), onlineMark()
+Cohesion: 0.22
+Nodes (8): Concerns, Files changed, Full verification before commit, Self-review findings, Task 5 Report: tui — рендер тексту і тексти i18n, TDD Evidence, Tests and results, What I implemented
 
 ## Knowledge Gaps
-- **121 isolated node(s):** `findbooks`, `jsonHit`, `quitTimeoutMsg`, `folderMsg`, `removedMsg` (+116 more)
+- **150 isolated node(s):** `findbooks`, `jsonHit`, `quitTimeoutMsg`, `folderMsg`, `removedMsg` (+145 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **17 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **16 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `Errorf()` connect `Task 5 Implementation Report: SQLite FTS5 Store` to `NewRootCmd`, `Parse`, `Task 7: Incremental Parallel Library Scanning`, `scan.go`, `Task 4: Extract Works from FB2 Section Tree - Report`, `mustHits`, `Task 1 Report: Module Scaffold and Platform Package`, `NewRootCmd`, `platform_darwin.go`, `newAddCmd`, `newSearchCmd`, `cli_test.go`?**
-  _High betweenness centrality (0.165) - this node is a cross-community bridge._
-- **Why does `New()` connect `model_test.go` to `NewRootCmd`, `Parse`, `Hit`, `Task 7: Incremental Parallel Library Scanning`, `Task 4: Extract Works from FB2 Section Tree - Report`, `Task 5 Implementation Report: SQLite FTS5 Store`, `mustHits`, `runScan`, `platform_darwin.go`, `newAddCmd`?**
-  _High betweenness centrality (0.136) - this node is a cross-community bridge._
-- **Why does `T()` connect `mustHits` to `NewRootCmd`, `Hit`, `model_test.go`, `Task 7: Incremental Parallel Library Scanning`, `scan.go`, `Task 4: Extract Works from FB2 Section Tree - Report`, `Task 5 Implementation Report: SQLite FTS5 Store`, `runScan`, `NewRootCmd`, `newAddCmd`, `newSearchCmd`, `newListCmd`, `cli_test.go`, `.renderLibraries`?**
-  _High betweenness centrality (0.112) - this node is a cross-community bridge._
+- **Why does `Errorf()` connect `Task 5 Implementation Report: SQLite FTS5 Store` to `Parse`, `Hit`, `Task 7: Incremental Parallel Library Scanning`, `scan.go`, `Task 4: Extract Works from FB2 Section Tree - Report`, `Task 1 Report: Module Scaffold and Platform Package`, `Task 6 Report: Прив'язка бібліотеки до тому`, `NewRootCmd`, `platform_darwin.go`?**
+  _High betweenness centrality (0.137) - this node is a cross-community bridge._
+- **Why does `New()` connect `model_test.go` to `Parse`, `Hit`, `Task 7: Incremental Parallel Library Scanning`, `Task 4: Extract Works from FB2 Section Tree - Report`, `Task 5 Implementation Report: SQLite FTS5 Store`, `runScan`, `Task 6 Report: Прив'язка бібліотеки до тому`, `NewRootCmd`, `platform_darwin.go`?**
+  _High betweenness centrality (0.130) - this node is a cross-community bridge._
+- **Why does `T()` connect `Hit` to `model_test.go`, `Task 7: Incremental Parallel Library Scanning`, `scan.go`, `Task 4: Extract Works from FB2 Section Tree - Report`, `Task 5 Implementation Report: SQLite FTS5 Store`, `runScan`, `Task 6 Report: Прив'язка бібліотеки до тому`, `NewRootCmd`?**
+  _High betweenness centrality (0.123) - this node is a cross-community bridge._
 - **Are the 6 inferred relationships involving `libModel()` (e.g. with `TestCtrlGIgnoredWhileChoosing()` and `TestCtrlGIgnoredWhileJobRunning()`) actually correct?**
   _`libModel()` has 6 INFERRED edges - model-reasoned connections that need verification._
+- **Are the 32 inferred relationships involving `T()` (e.g. with `.Error()` and `newAddCmd()`) actually correct?**
+  _`T()` has 32 INFERRED edges - model-reasoned connections that need verification._
 - **Are the 31 inferred relationships involving `Errorf()` (e.g. with `.AddLibrary()` and `.ExtractVersion()`) actually correct?**
   _`Errorf()` has 31 INFERRED edges - model-reasoned connections that need verification._
 - **Are the 3 inferred relationships involving `press()` (e.g. with `TestCtrlGIgnoredWhileChoosing()` and `TestCtrlGIgnoredWhileJobRunning()`) actually correct?**
   _`press()` has 3 INFERRED edges - model-reasoned connections that need verification._
-- **Are the 4 inferred relationships involving `drain()` (e.g. with `TestCtrlGIgnoredWhileJobRunning()` and `TestCtrlGIgnoredWhileRemoving()`) actually correct?**
-  _`drain()` has 4 INFERRED edges - model-reasoned connections that need verification._

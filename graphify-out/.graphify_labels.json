@@ -50,5 +50,13 @@
   "48": "NewRootCmd",
   "49": "catalog_en.go",
   "50": "catalog_uk.go",
-  "51": "newAddCmd"
+  "51": "newAddCmd",
+  "52": "mustHits",
+  "53": "fb2_test.go",
+  "54": "Task 7: документація, перевірка, граф — Report",
+  "55": "extract_test.go",
+  "56": "Block",
+  "57": "ParseText",
+  "58": "rank",
+  "59": "TestNormalize"
 }

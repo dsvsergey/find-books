@@ -1,16 +1,16 @@
 # Graph Report - find-books  (2026-09-29)
 
 ## Corpus Check
-- 95 files · ~84,811 words
+- 96 files · ~86,659 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 845 nodes · 1787 edges · 52 communities (36 shown, 16 thin omitted)
-- Extraction: 84% EXTRACTED · 16% INFERRED · 0% AMBIGUOUS · INFERRED: 287 edges (avg confidence: 0.8)
+- 867 nodes · 1821 edges · 60 communities (42 shown, 18 thin omitted)
+- Extraction: 84% EXTRACTED · 16% INFERRED · 0% AMBIGUOUS · INFERRED: 292 edges (avg confidence: 0.8)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `824f27e6`
+- Built from commit: `0124d014`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -60,6 +60,14 @@
 - [[_COMMUNITY_Task 2 & 3 Implementation Report|Task 2 & 3 Implementation Report]]
 - [[_COMMUNITY_NewRootCmd|NewRootCmd]]
 - [[_COMMUNITY_newAddCmd|newAddCmd]]
+- [[_COMMUNITY_mustHits|mustHits]]
+- [[_COMMUNITY_fb2_test.go|fb2_test.go]]
+- [[_COMMUNITY_Task 7 документація, перевірка, граф — Report|Task 7: документація, перевірка, граф — Report]]
+- [[_COMMUNITY_extract_test.go|extract_test.go]]
+- [[_COMMUNITY_Block|Block]]
+- [[_COMMUNITY_ParseText|ParseText]]
+- [[_COMMUNITY_rank|rank]]
+- [[_COMMUNITY_TestNormalize|TestNormalize]]
 
 ## God Nodes (most connected - your core abstractions)
 1. `libModel()` - 37 edges
@@ -70,7 +78,7 @@
 6. `New()` - 29 edges
 7. `Library` - 25 edges
 8. `Hit` - 23 edges
-9. `searched()` - 21 edges
+9. `searched()` - 22 edges
 10. `Model` - 20 edges
 
 ## Surprising Connections (you probably didn't know these)
@@ -88,51 +96,51 @@
 ## Import Cycles
 - None detected.
 
-## Communities (52 total, 16 thin omitted)
+## Communities (60 total, 18 thin omitted)
 
 ### Community 0 - "NewRootCmd"
-Cohesion: 0.12
-Nodes (25): tw, Work, Section, allKnown(), containsAll(), hasGivenName(), isNoise(), matchAuthor() (+17 more)
+Cohesion: 0.24
+Nodes (13): Work, Section, allKnown(), containsAll(), hasGivenName(), isNoise(), matchAuthor(), newWork() (+5 more)
 
 ### Community 1 - "Parse"
-Cohesion: 0.07
-Nodes (38): Builder, Decoder, Author, Block, BlockKind, Book, attr(), charsetReader() (+30 more)
+Cohesion: 0.19
+Nodes (11): Builder, Decoder, Author, Book, attr(), charsetReader(), collapse(), parser (+3 more)
 
 ### Community 2 - "Hit"
 Cohesion: 0.06
-Nodes (30): Hit, Query, T(), Store, MatchExpr(), Model, Cmd, job (+22 more)
+Nodes (34): CancelFunc, T(), Cmd, Context, job, KeyPressMsg, Msg, Model (+26 more)
 
 ### Community 3 - "model_test.go"
 Cohesion: 0.15
-Nodes (40): New(), Cmd, KeyPressMsg, Model, T, key(), newModel(), searched() (+32 more)
+Nodes (40): Cmd, KeyPressMsg, Model, T, key(), newModel(), searched(), settle() (+32 more)
 
 ### Community 4 - "Task 7: Incremental Parallel Library Scanning"
-Cohesion: 0.07
-Nodes (44): CancelFunc, Library, Context, Store, Register(), Scan(), Store, T (+36 more)
+Cohesion: 0.13
+Nodes (23): Library, Context, Store, Register(), Scan(), Store, T, newLibraryDir() (+15 more)
 
 ### Community 5 - "scan.go"
 Cohesion: 0.11
 Nodes (40): BookRecord, FileStamp, WorkRecord, folderOf(), Store, putBook(), collect(), deletions() (+32 more)
 
 ### Community 6 - "Library"
-Cohesion: 0.21
-Nodes (26): Store, T, mustHits(), seeded(), TestMatchExpr(), TestSearchAuthorFilter(), TestSearchByBookTitleAndFolder(), TestSearchEmptyQuery() (+18 more)
+Cohesion: 0.15
+Nodes (21): DB, Errorf(), Store, Time, initSchema(), Open(), scanLibrary(), addLib() (+13 more)
 
 ### Community 7 - "Task 4: Extract Works from FB2 Section Tree - Report"
 Cohesion: 0.15
-Nodes (52): Current(), ansiStrip(), ctrlG(), Cmd, Model, T, TestCtrlGClearsStatus(), TestCtrlGIgnoredWhileChoosing() (+44 more)
+Nodes (52): ansiStrip(), ctrlG(), Cmd, Model, T, TestCtrlGClearsStatus(), TestCtrlGIgnoredWhileChoosing(), TestCtrlGIgnoredWhileJobRunning() (+44 more)
 
 ### Community 8 - "Task 5 Implementation Report: SQLite FTS5 Store"
-Cohesion: 0.09
-Nodes (19): langSource, DB, Key, Lang, localizedError, resolveLang(), Errorf(), Parse() (+11 more)
+Cohesion: 0.07
+Nodes (28): langSource, Key, Lang, localizedError, resolveLang(), Current(), Parse(), Set() (+20 more)
 
 ### Community 9 - "mustHits"
 Cohesion: 0.11
 Nodes (18): Concerns, Files changed, Files changed (this round), Finding (from task review, Important, plan-mandated), Fix applied (per controller ruling), Fix round 1 — panic-recovery path untested, GREEN, GREEN (+10 more)
 
 ### Community 10 - "Task 1 Report: Module Scaffold and Platform Package"
-Cohesion: 0.26
-Nodes (20): changed(), Load(), Supported(), chuzhieHit(), T, TestLoadChangedFileIsStale(), TestLoadEmptyBookTitleUsesFileStem(), TestLoadNotCollectionShowsWholeBook() (+12 more)
+Cohesion: 0.24
+Nodes (23): Hit, changed(), Load(), Supported(), chuzhieHit(), T, TestLoadChangedFileIsStale(), TestLoadEmptyBookTitleUsesFileStem() (+15 more)
 
 ### Community 11 - "Task 6 Report: Прив'язка бібліотеки до тому"
 Cohesion: 0.16
@@ -206,20 +214,44 @@ Nodes (45): app, jsonHit, main(), Command, newAddCmd(), Command, newConfigCmd(),
 Cohesion: 0.22
 Nodes (8): Concerns, Files changed, Full verification before commit, Self-review findings, Task 5 Report: tui — рендер тексту і тексти i18n, TDD Evidence, Tests and results, What I implemented
 
+### Community 52 - "mustHits"
+Cohesion: 0.23
+Nodes (15): Query, Store, MatchExpr(), Store, T, mustHits(), seeded(), TestMatchExpr() (+7 more)
+
+### Community 53 - "fb2_test.go"
+Cohesion: 0.24
+Nodes (15): T, TestAuthorNameFallsBackToNick(), TestParseCollection(), TestParseFileZip(), TestParseGarbage(), TestParseLegacyEncodings(), TestParseNovelYearFromPublishInfo(), TestParseSkipsLargeBinary() (+7 more)
+
+### Community 54 - "Task 7: документація, перевірка, граф — Report"
+Cohesion: 0.12
+Nodes (16): Changes Made, Command Executed, Concerns, Conclusion, Files Changed, Files Modified, Git Commit, graphify update (+8 more)
+
+### Community 55 - "extract_test.go"
+Cohesion: 0.42
+Nodes (8): tw, T, plain(), sec(), TestIsNoise(), TestMatchAuthor(), TestWorks(), TestWorksSections()
+
+### Community 56 - "Block"
+Cohesion: 0.39
+Nodes (4): Block, BlockKind, blockKind(), parser
+
+### Community 57 - "ParseText"
+Cohesion: 0.36
+Nodes (8): Reader, ParseText(), ParseTextFile(), T, TestParseKeepsNoText(), TestParseTextBlocks(), TestParseTextFileZipAndCP1251(), TestParseTextNested()
+
 ## Knowledge Gaps
-- **150 isolated node(s):** `findbooks`, `jsonHit`, `quitTimeoutMsg`, `folderMsg`, `removedMsg` (+145 more)
+- **162 isolated node(s):** `findbooks`, `jsonHit`, `quitTimeoutMsg`, `folderMsg`, `removedMsg` (+157 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **16 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **18 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `Errorf()` connect `Task 5 Implementation Report: SQLite FTS5 Store` to `Parse`, `Hit`, `Task 7: Incremental Parallel Library Scanning`, `scan.go`, `Task 4: Extract Works from FB2 Section Tree - Report`, `Task 1 Report: Module Scaffold and Platform Package`, `Task 6 Report: Прив'язка бібліотеки до тому`, `NewRootCmd`, `platform_darwin.go`?**
-  _High betweenness centrality (0.137) - this node is a cross-community bridge._
-- **Why does `New()` connect `model_test.go` to `Parse`, `Hit`, `Task 7: Incremental Parallel Library Scanning`, `Task 4: Extract Works from FB2 Section Tree - Report`, `Task 5 Implementation Report: SQLite FTS5 Store`, `runScan`, `Task 6 Report: Прив'язка бібліотеки до тому`, `NewRootCmd`, `platform_darwin.go`?**
-  _High betweenness centrality (0.130) - this node is a cross-community bridge._
-- **Why does `T()` connect `Hit` to `model_test.go`, `Task 7: Incremental Parallel Library Scanning`, `scan.go`, `Task 4: Extract Works from FB2 Section Tree - Report`, `Task 5 Implementation Report: SQLite FTS5 Store`, `runScan`, `Task 6 Report: Прив'язка бібліотеки до тому`, `NewRootCmd`?**
-  _High betweenness centrality (0.123) - this node is a cross-community bridge._
+- **Why does `Errorf()` connect `Library` to `Parse`, `Hit`, `Task 7: Incremental Parallel Library Scanning`, `scan.go`, `Task 4: Extract Works from FB2 Section Tree - Report`, `Task 5 Implementation Report: SQLite FTS5 Store`, `Task 1 Report: Module Scaffold and Platform Package`, `Task 6 Report: Прив'язка бібліотеки до тому`, `NewRootCmd`, `platform_darwin.go`, `fb2_test.go`?**
+  _High betweenness centrality (0.131) - this node is a cross-community bridge._
+- **Why does `New()` connect `Task 4: Extract Works from FB2 Section Tree - Report` to `Parse`, `Hit`, `model_test.go`, `Task 7: Incremental Parallel Library Scanning`, `Task 5 Implementation Report: SQLite FTS5 Store`, `runScan`, `Task 6 Report: Прив'язка бібліотеки до тому`, `NewRootCmd`, `platform_darwin.go`?**
+  _High betweenness centrality (0.125) - this node is a cross-community bridge._
+- **Why does `T()` connect `Hit` to `scan.go`, `Library`, `Task 4: Extract Works from FB2 Section Tree - Report`, `Task 5 Implementation Report: SQLite FTS5 Store`, `runScan`, `Task 6 Report: Прив'язка бібліотеки до тому`, `NewRootCmd`?**
+  _High betweenness centrality (0.119) - this node is a cross-community bridge._
 - **Are the 6 inferred relationships involving `libModel()` (e.g. with `TestCtrlGIgnoredWhileChoosing()` and `TestCtrlGIgnoredWhileJobRunning()`) actually correct?**
   _`libModel()` has 6 INFERRED edges - model-reasoned connections that need verification._
 - **Are the 32 inferred relationships involving `T()` (e.g. with `.Error()` and `newAddCmd()`) actually correct?**
