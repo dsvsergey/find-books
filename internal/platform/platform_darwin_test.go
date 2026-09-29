@@ -246,6 +246,15 @@ func TestChooseFolderCanceled(t *testing.T) {
 	}
 }
 
+func TestChooseFolderScriptActivatesWithoutSystemEvents(t *testing.T) {
+	if !strings.Contains(chooseFolderScript, "activate") {
+		t.Fatal("chooseFolderScript must call activate so the dialog is brought to the front")
+	}
+	if strings.Contains(chooseFolderScript, "System Events") {
+		t.Fatal(`chooseFolderScript must not use "System Events" (can trigger an automation-permission prompt)`)
+	}
+}
+
 func TestChooseFolderOtherError(t *testing.T) {
 	stubOsascript(t, "", "boom happened\n", errors.New("exit status 1"))
 	_, err := ChooseFolder("x")

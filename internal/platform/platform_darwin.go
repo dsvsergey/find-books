@@ -262,8 +262,13 @@ func plistStrings(data []byte) (map[string]string, error) {
 }
 
 // chooseFolderScript receives the prompt as argv so quotes in it cannot
-// break the AppleScript source.
+// break the AppleScript source. "activate" brings osascript itself to the
+// front so the dialog is not left hidden behind other windows; it must stay
+// a plain "activate" (the current application) rather than
+// `tell application "System Events" to activate`, which can trigger a macOS
+// automation-permission prompt.
 const chooseFolderScript = `on run argv
+	activate
 	return POSIX path of (choose folder with prompt (item 1 of argv))
 end run`
 
