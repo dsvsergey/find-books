@@ -9,8 +9,11 @@ import (
 	"findbooks/internal/scan"
 )
 
+// parseFB2 is fb2.ParseTextFile; a variable so tests can make it panic.
+var parseFB2 = fb2.ParseTextFile
+
 func loadFB2(absPath string, h index.Hit) (Doc, error) {
-	b, err := fb2.ParseTextFile(absPath)
+	b, err := parseFB2(absPath)
 	if err != nil {
 		return Doc{}, err
 	}

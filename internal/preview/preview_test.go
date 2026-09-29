@@ -143,6 +143,20 @@ func TestLoadEmptyBookTitleUsesFileStem(t *testing.T) {
 	}
 }
 
+func TestLoadRecoversParserPanic(t *testing.T) {
+	p, h := write(t, "rumby.fb2", collection)
+	old := parseFB2
+	parseFB2 = func(string) (*fb2.Book, error) { panic("boom") }
+	t.Cleanup(func() { parseFB2 = old })
+	doc, err := Load(p, chuzhieHit(h))
+	if err == nil || !strings.Contains(err.Error(), "boom") {
+		t.Fatalf("err = %v, want it to contain %q", err, "boom")
+	}
+	if !reflect.DeepEqual(doc, Doc{}) {
+		t.Fatalf("doc = %+v, want zero value", doc)
+	}
+}
+
 func TestLoadTXT(t *testing.T) {
 	body := "\xef\xbb\xbfПервый абзац\r\nпродолжение.\r\n\r\n    Второй абзац.\r\n    Третий абзац.\r\n"
 	p, h := write(t, "book.txt", body)
