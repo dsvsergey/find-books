@@ -2,7 +2,6 @@ package cli
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -10,6 +9,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"findbooks/internal/i18n"
 	"findbooks/internal/index"
 	"findbooks/internal/library"
 )
@@ -35,12 +35,12 @@ func newSearchCmd(a *app) *cobra.Command {
 		asJSON bool
 	)
 	cmd := &cobra.Command{
-		Use:   "search <запит>",
-		Short: "Знайти твір за назвою, автором або назвою книги",
+		Use:   i18n.T(i18n.KeyCmdSearchUse),
+		Short: i18n.T(i18n.KeyCmdSearchShort),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			text := strings.Join(args, " ")
 			if strings.TrimSpace(text) == "" && strings.TrimSpace(author) == "" {
-				return errors.New("вкажіть запит або --author")
+				return i18n.Errorf(nil, i18n.KeyNeedQuery)
 			}
 			st, err := a.openStore()
 			if err != nil {
@@ -52,7 +52,7 @@ func newSearchCmd(a *app) *cobra.Command {
 				return err
 			}
 			if total == 0 {
-				return errNoLibraries
+				return noLibraries()
 			}
 			hits, err := st.Search(index.Query{Text: text, Author: author, Limit: limit})
 			if err != nil {
@@ -62,15 +62,15 @@ func newSearchCmd(a *app) *cobra.Command {
 				return writeJSON(cmd.OutOrStdout(), hits)
 			}
 			if len(hits) == 0 {
-				fmt.Fprintln(cmd.ErrOrStderr(), "Нічого не знайдено")
+				fmt.Fprintln(cmd.ErrOrStderr(), i18n.T(i18n.KeyNothingFound))
 				return nil
 			}
 			return writeTable(cmd.OutOrStdout(), hits)
 		},
 	}
-	cmd.Flags().StringVar(&author, "author", "", "обмежити пошук автором")
-	cmd.Flags().IntVar(&limit, "limit", 20, "максимальна кількість результатів")
-	cmd.Flags().BoolVar(&asJSON, "json", false, "вивести результат як JSON")
+	cmd.Flags().StringVar(&author, "author", "", i18n.T(i18n.KeyFlagAuthor))
+	cmd.Flags().IntVar(&limit, "limit", 20, i18n.T(i18n.KeyFlagLimit))
+	cmd.Flags().BoolVar(&asJSON, "json", false, i18n.T(i18n.KeyFlagJSON))
 	return cmd
 }
 
@@ -94,7 +94,7 @@ func writeJSON(w io.Writer, hits []index.Hit) error {
 
 func writeTable(w io.Writer, hits []index.Hit) error {
 	tw := tabwriter.NewWriter(w, 0, 0, 2, ' ', 0)
-	fmt.Fprintln(tw, "ТВІР\tАВТОР\tКНИГА\tФАЙЛ")
+	fmt.Fprintln(tw, i18n.T(i18n.KeySearchHeader))
 	for _, h := range hits {
 		book := h.BookTitle
 		if h.BookYear != "" {

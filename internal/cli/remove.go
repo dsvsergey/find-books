@@ -4,12 +4,14 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
+
+	"findbooks/internal/i18n"
 )
 
 func newRemoveCmd(a *app) *cobra.Command {
 	return &cobra.Command{
-		Use:   "remove <назва>",
-		Short: "Прибрати бібліотеку з індексу (файли не чіпаються)",
+		Use:   i18n.T(i18n.KeyCmdRemoveUse),
+		Short: i18n.T(i18n.KeyCmdRemoveShort),
 		Args:  exactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			st, err := a.openStore()
@@ -20,7 +22,7 @@ func newRemoveCmd(a *app) *cobra.Command {
 			if err := st.RemoveLibrary(args[0]); err != nil {
 				return err
 			}
-			fmt.Fprintf(cmd.OutOrStdout(), "Бібліотеку «%s» прибрано з індексу\n", args[0])
+			fmt.Fprint(cmd.OutOrStdout(), i18n.T(i18n.KeyRemoved, args[0])+"\n")
 			return nil
 		},
 	}

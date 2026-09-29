@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 
+	"findbooks/internal/i18n"
 	"findbooks/internal/index"
 	"findbooks/internal/scan"
 )
@@ -55,17 +56,16 @@ func (p *progressBar) Done() {
 // runScan indexes one library with a progress bar and prints the report.
 func runScan(cmd *cobra.Command, st *index.Store, lib index.Library, root string) error {
 	errOut := cmd.ErrOrStderr()
-	fmt.Fprintf(errOut, "Індексую «%s» (%s)…\n", lib.Name, root)
+	fmt.Fprint(errOut, i18n.T(i18n.KeyIndexing, lib.Name, root)+"\n")
 	bar := newProgressBar(errOut)
 	rep, err := scan.Run(cmd.Context(), st, lib.ID, root, bar.Update)
 	bar.Done()
-	fmt.Fprintf(errOut, "Додано: %d, оновлено: %d, видалено: %d, без змін: %d\n",
-		rep.Added, rep.Updated, rep.Removed, rep.Unchanged)
+	fmt.Fprint(errOut, i18n.T(i18n.KeyScanReport, rep.Added, rep.Updated, rep.Removed, rep.Unchanged)+"\n")
 	if n := len(rep.Errors); n > 0 {
-		fmt.Fprintf(errOut, "Проблемні файли (%d) — проіндексовано лише за ім'ям файлу:\n", n)
+		fmt.Fprint(errOut, i18n.T(i18n.KeyProblemFiles, n)+"\n")
 		for i, e := range rep.Errors {
 			if i == maxReportedErrors {
-				fmt.Fprintf(errOut, "  …та ще %d\n", n-i)
+				fmt.Fprint(errOut, i18n.T(i18n.KeyAndMore, n-i)+"\n")
 				break
 			}
 			fmt.Fprintf(errOut, "  %s: %v\n", e.RelPath, e.Err)

@@ -6,6 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"findbooks/internal/i18n"
 	"findbooks/internal/library"
 )
 
@@ -19,7 +20,7 @@ func onlineMark(volumeID, rootRel string) string {
 func newListCmd(a *app) *cobra.Command {
 	return &cobra.Command{
 		Use:   "list",
-		Short: "Показати бібліотеки в індексі",
+		Short: i18n.T(i18n.KeyCmdListShort),
 		Args:  noArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			st, err := a.openStore()
@@ -32,11 +33,11 @@ func newListCmd(a *app) *cobra.Command {
 				return err
 			}
 			if len(libs) == 0 {
-				fmt.Fprintln(cmd.ErrOrStderr(), errNoLibraries)
+				fmt.Fprintln(cmd.ErrOrStderr(), noLibraries())
 				return nil
 			}
 			tw := tabwriter.NewWriter(cmd.OutOrStdout(), 0, 0, 2, ' ', 0)
-			fmt.Fprintln(tw, "НАЗВА\tДИСК\tКНИГ\tТВОРІВ\tОНОВЛЕНО")
+			fmt.Fprintln(tw, i18n.T(i18n.KeyListHeader))
 			for _, l := range libs {
 				updated := "—"
 				if !l.LastScan.IsZero() {
