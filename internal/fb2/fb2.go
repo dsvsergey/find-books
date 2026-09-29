@@ -95,10 +95,13 @@ func Parse(r io.Reader) (*Book, error) {
 	return &p.book, nil
 }
 
+// charsetReader decodes known encodings; an unknown label is read as UTF-8,
+// so a mislabelled UTF-8 file parses and anything else fails on invalid
+// UTF-8 and lands in the error report.
 func charsetReader(label string, input io.Reader) (io.Reader, error) {
 	enc, err := htmlindex.Get(label)
 	if err != nil {
-		return nil, fmt.Errorf("unsupported encoding %q", label)
+		return input, nil
 	}
 	return enc.NewDecoder().Reader(input), nil
 }

@@ -85,10 +85,22 @@ func TestParseLegacyEncodings(t *testing.T) {
 	}
 }
 
+// An unknown encoding label is tried as UTF-8 (spec: «невідоме → спроба
+// UTF-8, інакше файл у звіт помилок»).
 func TestParseUnknownEncoding(t *testing.T) {
-	_, err := Parse(strings.NewReader(`<?xml version="1.0" encoding="x-klingon"?><FictionBook/>`))
+	b, err := Parse(strings.NewReader(`<?xml version="1.0" encoding="x-klingon"?>` +
+		`<FictionBook><description><title-info><book-title>Qapla’ Книга</book-title></title-info></description></FictionBook>`))
+	if err != nil {
+		t.Fatalf("UTF-8 content with an unknown label must parse: %v", err)
+	}
+	if b.Title != "Qapla’ Книга" {
+		t.Fatalf("title = %q", b.Title)
+	}
+	// Not valid UTF-8 (a cp1251 byte): still an error.
+	_, err = Parse(strings.NewReader("<?xml version=\"1.0\" encoding=\"x-klingon\"?>" +
+		"<FictionBook><description><title-info><book-title>\xcf\xf0\xe8</book-title></title-info></description></FictionBook>"))
 	if err == nil {
-		t.Fatal("expected error for unknown encoding")
+		t.Fatal("expected error for non-UTF-8 content with an unknown encoding")
 	}
 }
 
