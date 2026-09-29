@@ -15,6 +15,7 @@ import (
 
 	"findbooks/internal/extract"
 	"findbooks/internal/fb2"
+	"findbooks/internal/i18n"
 	"findbooks/internal/index"
 )
 
@@ -95,7 +96,7 @@ func Run(ctx context.Context, st *index.Store, libraryID int64, root string, onP
 	// A root that vanished mid-walk (disk ejected) would make every book look
 	// deleted; refuse to touch the index instead.
 	if err := statRoot(root); err != nil {
-		return rep, fmt.Errorf("тека бібліотеки недоступна: %w", err)
+		return rep, fmt.Errorf("%s: %w", i18n.T(i18n.KeyLibraryFolderUnavailable), err)
 	}
 	del := deletions(stored, seen, failed)
 	rep.Removed = len(del)

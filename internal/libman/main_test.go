@@ -3,10 +3,13 @@ package libman
 import (
 	"os"
 	"testing"
+
+	"findbooks/internal/i18n"
 )
 
 // TestMain keeps platform's volume cache out of the user's home directory.
 func TestMain(m *testing.M) {
+	i18n.Set(i18n.UK)
 	dir, err := os.MkdirTemp("", "findbooks-test-*")
 	if err != nil {
 		panic(err)

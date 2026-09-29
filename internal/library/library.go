@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"findbooks/internal/i18n"
 	"findbooks/internal/platform"
 )
 
@@ -21,22 +22,22 @@ func Locate(dir string) (Location, error) {
 	}
 	real, err := filepath.EvalSymlinks(abs)
 	if err != nil {
-		return Location{}, fmt.Errorf("тека %s: %w", dir, err)
+		return Location{}, fmt.Errorf("%s: %w", i18n.T(i18n.KeyFolder, dir), err)
 	}
 	fi, err := os.Stat(real)
 	if err != nil {
 		return Location{}, err
 	}
 	if !fi.IsDir() {
-		return Location{}, fmt.Errorf("%s — не тека", dir)
+		return Location{}, i18n.Errorf(nil, i18n.KeyNotAFolder, dir)
 	}
 	id, name, err := platform.VolumeID(real)
 	if err != nil {
-		return Location{}, fmt.Errorf("не вдалося визначити диск для %s: %w", dir, err)
+		return Location{}, fmt.Errorf("%s: %w", i18n.T(i18n.KeyVolumeUnknown, dir), err)
 	}
 	mp, ok := platform.MountPoint(id)
 	if !ok {
-		return Location{}, fmt.Errorf("диск «%s» не знайдено серед підключених", name)
+		return Location{}, i18n.Errorf(nil, i18n.KeyDiskNotMounted, name)
 	}
 	rel, err := relToMount(mp, real)
 	if err != nil {
@@ -60,7 +61,7 @@ func relToMount(mp, real string) (string, error) {
 			return filepath.Rel(mp, alt)
 		}
 	}
-	return "", fmt.Errorf("%s не лежить на томі %s", real, mp)
+	return "", i18n.Errorf(nil, i18n.KeyNotOnVolume, real, mp)
 }
 
 // Root returns the library's full path, or false if its volume is not mounted.

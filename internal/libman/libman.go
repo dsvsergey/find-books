@@ -5,16 +5,16 @@ package libman
 import (
 	"context"
 	"errors"
-	"fmt"
 	"path/filepath"
 
+	"findbooks/internal/i18n"
 	"findbooks/internal/index"
 	"findbooks/internal/library"
 	"findbooks/internal/scan"
 )
 
 // ErrOffline means the library's disk is not mounted.
-var ErrOffline = errors.New("диск бібліотеки не підключено")
+var ErrOffline = errors.New("library disk is not mounted")
 
 // Register locates dir on its volume and records it as a library named name
 // (the folder name when name is empty). It returns the library and the
@@ -26,7 +26,7 @@ func Register(st *index.Store, dir, name string) (index.Library, string, error) 
 	}
 	root, ok := library.Root(loc.VolumeID, loc.RootRel)
 	if !ok {
-		return index.Library{}, "", fmt.Errorf("диск «%s» не знайдено серед підключених", loc.VolumeName)
+		return index.Library{}, "", i18n.Errorf(nil, i18n.KeyDiskNotMounted, loc.VolumeName)
 	}
 	if name == "" {
 		name = filepath.Base(root)
@@ -43,7 +43,7 @@ func Register(st *index.Store, dir, name string) (index.Library, string, error) 
 func Scan(ctx context.Context, st *index.Store, lib index.Library, onProgress func(scan.Progress)) (scan.Report, error) {
 	root, ok := library.Root(lib.VolumeID, lib.RootRel)
 	if !ok {
-		return scan.Report{}, fmt.Errorf("%w: «%s»", ErrOffline, lib.VolumeName)
+		return scan.Report{}, i18n.Errorf(ErrOffline, i18n.KeyLibraryDiskOffline, lib.VolumeName)
 	}
 	return scan.Run(ctx, st, lib.ID, root, onProgress)
 }

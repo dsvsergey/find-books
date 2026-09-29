@@ -9,12 +9,14 @@ import (
 	"strings"
 	"time"
 
+	"findbooks/internal/i18n"
+
 	_ "modernc.org/sqlite"
 )
 
 var (
-	ErrNotFound = errors.New("бібліотеку не знайдено")
-	ErrExists   = errors.New("бібліотека з такою назвою або шляхом уже є")
+	ErrNotFound = errors.New("library not found")
+	ErrExists   = errors.New("library already exists")
 )
 
 type Store struct{ db *sql.DB }
@@ -70,7 +72,7 @@ func initSchema(db *sql.DB, path string) error {
 }
 
 func versionError(v int, path string) error {
-	return fmt.Errorf("індекс створено іншою версією findbooks (схема %d) — видаліть %s і додайте бібліотеки знову", v, path)
+	return i18n.Errorf(nil, i18n.KeySchemaMismatch, v, path)
 }
 
 func (s *Store) Close() error { return s.db.Close() }
@@ -80,7 +82,7 @@ func (s *Store) AddLibrary(name, volumeID, volumeName, rootRel string) (Library,
 		name, volumeID, volumeName, rootRel)
 	if err != nil {
 		if strings.Contains(err.Error(), "UNIQUE constraint failed") {
-			return Library{}, fmt.Errorf("%w: %s", ErrExists, name)
+			return Library{}, i18n.Errorf(ErrExists, i18n.KeyLibraryExists, name)
 		}
 		return Library{}, err
 	}
@@ -111,7 +113,7 @@ func scanLibrary(row interface{ Scan(...any) error }) (Library, error) {
 func (s *Store) Library(name string) (Library, error) {
 	l, err := scanLibrary(s.db.QueryRow(libSelect+` WHERE l.name = ?`, name))
 	if errors.Is(err, sql.ErrNoRows) {
-		return Library{}, fmt.Errorf("%w: %s", ErrNotFound, name)
+		return Library{}, i18n.Errorf(ErrNotFound, i18n.KeyLibraryNotFound, name)
 	}
 	return l, err
 }
@@ -139,7 +141,7 @@ func (s *Store) RemoveLibrary(name string) error {
 		return err
 	}
 	if n, _ := res.RowsAffected(); n == 0 {
-		return fmt.Errorf("%w: %s", ErrNotFound, name)
+		return i18n.Errorf(ErrNotFound, i18n.KeyLibraryNotFound, name)
 	}
 	return nil
 }
@@ -155,7 +157,7 @@ func (s *Store) ExtractVersion(libraryID int64) (int, error) {
 	var v int
 	err := s.db.QueryRow(`SELECT extract_version FROM libraries WHERE id = ?`, libraryID).Scan(&v)
 	if errors.Is(err, sql.ErrNoRows) {
-		return 0, fmt.Errorf("%w: id %d", ErrNotFound, libraryID)
+		return 0, i18n.Errorf(ErrNotFound, i18n.KeyLibraryNotFound, fmt.Sprintf("id %d", libraryID))
 	}
 	return v, err
 }
