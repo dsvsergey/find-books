@@ -51,6 +51,7 @@ var catalogUK = map[Key]string{
 	KeyCmdConfigShort:     "Налаштування findbooks",
 	KeyCmdConfigLangShort: "Показати або змінити мову інтерфейсу",
 	KeyLangSaved:          "Мову інтерфейсу змінено: українська",
+	KeyEnvOverridesLang:   "Увага: FINDBOOKS_LANG=%s має пріоритет над збереженим налаштуванням",
 
 	KeyChoosePrompt:             "Виберіть теку бібліотеки",
 	KeyErrorStatus:              "Помилка: %s",

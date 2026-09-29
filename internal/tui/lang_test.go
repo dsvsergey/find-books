@@ -77,6 +77,33 @@ func TestCtrlGIgnoredWhileJobRunning(t *testing.T) {
 	}
 }
 
+// TestCtrlGIgnoredWhileRemoving pins that ctrl+g is ignored while a
+// removeLibrary call is pending: the language must not change and no save
+// command must be returned.
+func TestCtrlGIgnoredWhileRemoving(t *testing.T) {
+	t.Cleanup(func() { i18n.Set(i18n.UK) })
+	fb := &fakeLibs{libs: []index.Library{fantastika}, total: 23251}
+	m := libModel(fb, 23251, "", nil)
+	m, cmd := press(m, "ctrl+l")
+	m = drain(t, m, cmd)
+	m, _ = press(m, "d")
+	m, removeCmd := press(m, "y")
+	if removeCmd == nil {
+		t.Fatal("y must start the removal")
+	}
+	if !m.(Model).removing {
+		t.Fatal("removing must be set while removeLibrary is pending")
+	}
+
+	m, gCmd := ctrlG(m)
+	if gCmd != nil {
+		t.Fatal("ctrl+g must be ignored (no save command) while removing is pending")
+	}
+	if i18n.Current() != i18n.UK {
+		t.Fatal("ctrl+g must not change the language while removing is pending")
+	}
+}
+
 // TestLibrariesHelpStartsWithLangToggle pins that the toggle hint is first
 // on the libraries screen's help line too (a long help line is truncated to
 // the screen width, so a trailing hint would be cut off).
@@ -135,6 +162,50 @@ func TestLangSaveFailureShowsStatus(t *testing.T) {
 	m, _ = m.Update(cmd())
 	if st := m.(Model).status; !strings.Contains(st, "Could not save the language") || !strings.Contains(st, "disk full") {
 		t.Fatalf("status = %q", st)
+	}
+}
+
+// TestLangSaveShowsEnvOverrideNote pins that toggling the language sets the
+// env-override status note when FINDBOOKS_LANG (via the injected Getenv) is
+// set to something other than the language just saved.
+func TestLangSaveShowsEnvOverrideNote(t *testing.T) {
+	t.Cleanup(func() { i18n.Set(i18n.UK) })
+	fb := &fakeSearcher{}
+	rec := &recorder{online: true}
+	act := rec.actions()
+	act.Getenv = func(k string) string {
+		if k == "FINDBOOKS_LANG" {
+			return "uk"
+		}
+		return ""
+	}
+	m := tea.Model(New(fb, act, 5))
+	m, cmd := ctrlG(m) // UK -> EN
+	m, _ = m.Update(cmd())
+	st := m.(Model).status
+	if !strings.Contains(st, "FINDBOOKS_LANG=uk") {
+		t.Fatalf("status = %q, want the env-override note", st)
+	}
+}
+
+// TestLangSaveNoEnvOverrideNoteWhenMatching pins that no note is shown when
+// FINDBOOKS_LANG already agrees with the language just saved.
+func TestLangSaveNoEnvOverrideNoteWhenMatching(t *testing.T) {
+	t.Cleanup(func() { i18n.Set(i18n.UK) })
+	fb := &fakeSearcher{}
+	rec := &recorder{online: true}
+	act := rec.actions()
+	act.Getenv = func(k string) string {
+		if k == "FINDBOOKS_LANG" {
+			return "en"
+		}
+		return ""
+	}
+	m := tea.Model(New(fb, act, 5))
+	m, cmd := ctrlG(m) // UK -> EN
+	m, _ = m.Update(cmd())
+	if st := m.(Model).status; st != "" {
+		t.Fatalf("status = %q, want empty (no override note)", st)
 	}
 }
 

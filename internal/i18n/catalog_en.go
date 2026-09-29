@@ -48,9 +48,10 @@ var catalogEN = map[Key]string{
 	KeyNeedNameOrAll:      "give a library name or --all",
 	KeySkipOffline:        "⚠ «%s»: disk «%s» is not mounted — skipping",
 	KeyFlagAll:            "update all mounted libraries",
-	KeyCmdConfigShort:     "findbooks settings",
+	KeyCmdConfigShort:     "Findbooks settings",
 	KeyCmdConfigLangShort: "Show or change the interface language",
 	KeyLangSaved:          "Interface language set: English",
+	KeyEnvOverridesLang:   "Note: FINDBOOKS_LANG=%s takes precedence over the saved setting",
 
 	KeyChoosePrompt:             "Choose the library folder",
 	KeyErrorStatus:              "Error: %s",

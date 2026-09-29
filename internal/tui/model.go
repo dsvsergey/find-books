@@ -42,6 +42,10 @@ type Actions struct {
 	Exists       func(path string) bool // does the file exist on the mounted disk
 	ChooseFolder func(prompt string) (string, error)
 	SaveLang     func(i18n.Lang) error
+	// Getenv looks up an environment variable; nil is treated like a
+	// function that always returns "". Used to detect that FINDBOOKS_LANG
+	// overrides the setting SaveLang just persisted.
+	Getenv func(string) string
 }
 
 const (
@@ -157,8 +161,15 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case quitTimeoutMsg:
 		return m, tea.Quit
 	case langSavedMsg:
-		if msg.err != nil {
+		switch {
+		case msg.err != nil:
 			m.status = i18n.T(i18n.KeyLangSaveFailed, msg.err.Error())
+		case m.act.Getenv != nil:
+			if envVal := m.act.Getenv("FINDBOOKS_LANG"); envVal != "" {
+				if envLang, perr := i18n.Parse(envVal); perr != nil || envLang != i18n.Current() {
+					m.status = i18n.T(i18n.KeyEnvOverridesLang, envVal)
+				}
+			}
 		}
 		return m, nil
 	case tea.KeyPressMsg:

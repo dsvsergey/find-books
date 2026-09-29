@@ -59,6 +59,7 @@ const (
 	KeyCmdConfigShort
 	KeyCmdConfigLangShort
 	KeyLangSaved
+	KeyEnvOverridesLang
 
 	// tui
 	KeyChoosePrompt
