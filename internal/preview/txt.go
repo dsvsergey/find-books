@@ -35,8 +35,19 @@ func decode(raw []byte) string {
 
 // paragraphs splits plain text into paragraphs: a blank line ends one, and
 // a line starting with a space or tab begins one (books typed one indented
-// line per paragraph); other line breaks are joined with a space.
+// line per paragraph); other line breaks are joined with a space. When the
+// text has neither marker (no blank line, no indented line) but more than
+// one non-empty line, it is instead treated as one paragraph per line
+// (books typed that way too, with no blank lines between paragraphs).
 func paragraphs(s string) []fb2.Block {
+	norm := strings.ReplaceAll(s, "\r\n", "\n")
+	if lines := strings.Split(strings.Trim(norm, "\n"), "\n"); onePerLine(lines) {
+		out := make([]fb2.Block, 0, len(lines))
+		for _, line := range lines {
+			out = append(out, fb2.Block{Kind: fb2.BlockPara, Text: strings.Join(strings.Fields(line), " ")})
+		}
+		return out
+	}
 	var out []fb2.Block
 	var cur []string
 	flush := func() {
@@ -45,7 +56,7 @@ func paragraphs(s string) []fb2.Block {
 		}
 		cur = cur[:0]
 	}
-	for _, line := range strings.Split(strings.ReplaceAll(s, "\r\n", "\n"), "\n") {
+	for _, line := range strings.Split(norm, "\n") {
 		switch {
 		case strings.TrimSpace(line) == "":
 			flush()
@@ -58,4 +69,21 @@ func paragraphs(s string) []fb2.Block {
 	}
 	flush()
 	return out
+}
+
+// onePerLine reports whether lines (already stripped of any leading or
+// trailing blank line from the text's own leading/trailing newlines) has
+// more than one line and none of them is blank or starts with a space or
+// tab: the text has neither paragraph marker, so each line is its own
+// paragraph.
+func onePerLine(lines []string) bool {
+	if len(lines) < 2 {
+		return false
+	}
+	for _, line := range lines {
+		if strings.TrimSpace(line) == "" || line[0] == ' ' || line[0] == '\t' {
+			return false
+		}
+	}
+	return true
 }

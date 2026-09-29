@@ -189,6 +189,33 @@ func TestParagraphs(t *testing.T) {
 	}
 }
 
+// TestParagraphsOnePerLine covers files typed with one paragraph per line
+// (no blank line and no indented line to mark paragraph breaks): each
+// non-empty line must become its own paragraph instead of all being joined.
+func TestParagraphsOnePerLine(t *testing.T) {
+	got := texts(paragraphs("Первая строка.\nВторая строка.\nТретья строка."))
+	want := []string{"Первая строка.", "Вторая строка.", "Третья строка."}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("paragraphs = %q, want %q", got, want)
+	}
+
+	// A trailing newline is just an end-of-file artifact, not a blank
+	// separator line, and must not defeat the one-per-line detection.
+	got = texts(paragraphs("Первая строка.\nВторая строка.\n"))
+	want = []string{"Первая строка.", "Вторая строка."}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("paragraphs with trailing newline = %q, want %q", got, want)
+	}
+
+	// A single line (no second non-empty line) is not "one per line" and
+	// keeps the ordinary single-paragraph behavior.
+	got = texts(paragraphs("Одна строка."))
+	want = []string{"Одна строка."}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("single line = %q, want %q", got, want)
+	}
+}
+
 func TestLoadUnsupportedAndMissing(t *testing.T) {
 	if _, err := Load("/nonexistent.pdf", index.Hit{Format: "pdf"}); !errors.Is(err, ErrUnsupported) {
 		t.Fatalf("pdf err = %v", err)
