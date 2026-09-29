@@ -23,6 +23,7 @@ type Actions struct {
 	Open   func(path string) error
 	Reveal func(path string) error
 	Copy   func(text string) error
+	Exists func(path string) bool // does the file exist on the mounted disk
 }
 
 const (
@@ -174,7 +175,12 @@ func (m *Model) withFile(fn func(string) error, okStatus string) {
 		m.status = fmt.Sprintf("Диск «%s» не підключено — підключіть його, щоб відкрити файл", h.VolumeName)
 		return
 	}
-	if err := fn(library.FilePath(root, h.RelPath)); err != nil {
+	p := library.FilePath(root, h.RelPath)
+	if !m.act.Exists(p) {
+		m.status = "Файл не знайдено: " + h.RelPath
+		return
+	}
+	if err := fn(p); err != nil {
 		m.status = "Помилка: " + err.Error()
 		return
 	}

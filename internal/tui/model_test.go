@@ -26,6 +26,7 @@ func (f *fakeSearcher) BookWorks(id int64) ([]string, error) { return f.toc[id],
 
 type recorder struct {
 	online                   bool
+	missing                  bool // files do not exist on the (fake) disk
 	opened, revealed, copied []string
 }
 
@@ -40,6 +41,7 @@ func (r *recorder) actions() Actions {
 		Open:   func(p string) error { r.opened = append(r.opened, p); return nil },
 		Reveal: func(p string) error { r.revealed = append(r.revealed, p); return nil },
 		Copy:   func(p string) error { r.copied = append(r.copied, p); return nil },
+		Exists: func(string) bool { return !r.missing },
 	}
 }
 
@@ -244,5 +246,33 @@ func TestViewShowsDetails(t *testing.T) {
 	}
 	if !tm.(Model).View().AltScreen {
 		t.Error("view must use the alt screen")
+	}
+}
+
+func TestMissingFileShowsStatus(t *testing.T) {
+	m, _, rec := newModel(true)
+	rec.missing = true
+	m = New(m.src, rec.actions(), 1234)
+	tm, _ := typeText(m, "чужие дети")
+	tm = settle(t, tm)
+	for _, k := range []tea.KeyPressMsg{{Code: tea.KeyEnter}, {Code: 'o', Mod: tea.ModCtrl}, {Code: 'y', Mod: tea.ModCtrl}} {
+		tm, _ = key(tm, k)
+		if got, want := tm.(Model).status, "Файл не знайдено: Сборники/Румбы.fb2"; got != want {
+			t.Fatalf("status = %q, want %q", got, want)
+		}
+	}
+	if len(rec.opened)+len(rec.revealed)+len(rec.copied) != 0 {
+		t.Fatalf("action called for a missing file: %q %q %q", rec.opened, rec.revealed, rec.copied)
+	}
+}
+
+func TestDefaultActionsExists(t *testing.T) {
+	dir := t.TempDir()
+	exists := DefaultActions().Exists
+	if !exists(dir) {
+		t.Fatalf("Exists(%q) = false", dir)
+	}
+	if exists(filepath.Join(dir, "нема.fb2")) {
+		t.Fatal("Exists of a missing file = true")
 	}
 }
