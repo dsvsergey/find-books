@@ -228,6 +228,11 @@ func parseAll(ctx context.Context, jobs []job) <-chan result {
 	return results
 }
 
+// failedSize is stored as the size of a book whose parse failed, so the
+// next scan sees a size mismatch and retries it (e.g. after a transient
+// read error or permission problem).
+const failedSize = -1
+
 func parse(j job) (r result) {
 	title := stem(path.Base(j.rel))
 	fallback := index.BookRecord{
@@ -238,14 +243,16 @@ func parse(j job) (r result) {
 	if j.format != "fb2" {
 		return r
 	}
+	failed := fallback
+	failed.Size = failedSize
 	defer func() {
 		if p := recover(); p != nil {
-			r = result{rec: fallback, existed: j.existed, err: fmt.Errorf("parser panic: %v", p)}
+			r = result{rec: failed, existed: j.existed, err: fmt.Errorf("parser panic: %v", p)}
 		}
 	}()
 	b, err := fb2.ParseFile(j.abs)
 	if err != nil {
-		r.err = err
+		r.rec, r.err = failed, err
 		return r
 	}
 	if b.Title == "" {

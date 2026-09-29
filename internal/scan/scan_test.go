@@ -130,7 +130,10 @@ func TestRunIsIncremental(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if rep.Unchanged != 5 || rep.Added != 0 || rep.Updated != 0 || rep.Removed != 0 || len(rep.Errors) != 0 {
+	// broken.fb2 failed to parse, so it was stored with size -1 and is
+	// retried (and fails again) on every run; the other 4 files are unchanged.
+	if rep.Unchanged != 4 || rep.Added != 0 || rep.Updated != 1 || rep.Removed != 0 ||
+		len(rep.Errors) != 1 || rep.Errors[0].RelPath != "broken.fb2" {
 		t.Fatalf("second run report = %+v", rep)
 	}
 }
@@ -154,7 +157,8 @@ func TestRunDetectsChangesAndRemovals(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if rep.Updated != 1 || rep.Removed != 1 || rep.Unchanged != 3 || rep.Added != 0 {
+	// Updated: the novel plus broken.fb2, which is retried on every run.
+	if rep.Updated != 2 || rep.Removed != 1 || rep.Unchanged != 2 || rep.Added != 0 {
 		t.Fatalf("report = %+v", rep)
 	}
 	if len(hits(t, st, "продавец воздуха")) != 1 || len(hits(t, st, "амфибия")) != 0 || len(hits(t, st, "кэц")) != 0 {
@@ -182,5 +186,52 @@ func TestFormatAndStem(t *testing.T) {
 	}
 	if got := stem("Книга.fb2.zip"); got != "Книга" {
 		t.Errorf("stem = %q", got)
+	}
+}
+
+func TestRunRetriesFailedParse(t *testing.T) {
+	st, lib, root := setup(t)
+	// broken.fb2 would be re-parsed on every run too; drop it so the counts
+	// below reflect only the file under test.
+	if err := os.Remove(filepath.Join(root, "broken.fb2")); err != nil {
+		t.Fatal(err)
+	}
+	rumby := filepath.Join(root, "Сборники", "Румбы 1988.fb2")
+	if err := os.Chmod(rumby, 0); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { os.Chmod(rumby, 0o644) })
+	rep, err := Run(context.Background(), st, lib.ID, root, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var rumbyErr bool
+	for _, e := range rep.Errors {
+		if e.RelPath == "Сборники/Румбы 1988.fb2" {
+			rumbyErr = true
+		}
+	}
+	if !rumbyErr {
+		t.Fatalf("unreadable file not reported: %+v", rep.Errors)
+	}
+	if h := hits(t, st, "румбы 1988"); len(h) != 1 {
+		t.Fatalf("filename-only record missing: %+v", h)
+	}
+	if h := hits(t, st, "чужие дети"); len(h) != 0 {
+		t.Fatalf("unreadable file must not have works yet: %+v", h)
+	}
+
+	if err := os.Chmod(rumby, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	rep, err = Run(context.Background(), st, lib.ID, root, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if rep.Updated != 1 || rep.Added != 0 || rep.Removed != 0 {
+		t.Fatalf("second run report = %+v", rep)
+	}
+	if h := hits(t, st, "чужие дети"); len(h) != 1 {
+		t.Fatalf("restored file was not re-parsed: %+v", h)
 	}
 }
