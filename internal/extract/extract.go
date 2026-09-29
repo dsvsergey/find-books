@@ -15,7 +15,12 @@ import (
 // output, so the scanner re-parses every file of already indexed libraries.
 const Version = 2
 
-type Work struct{ Title, Author, TreePath string }
+// Work is one work found in a book. Section is the section it came from;
+// nil when the work is the whole book (not a collection).
+type Work struct {
+	Title, Author, TreePath string
+	Section                 *fb2.Section
+}
 
 const treeSep = " › "
 
@@ -40,26 +45,26 @@ func Works(b *fb2.Book) ([]Work, bool) {
 				walk(s.Children, name)
 				continue
 			}
-			found = append(found, newWork(s.Title, ctxAuthor, b.Authors))
+			found = append(found, newWork(s, ctxAuthor, b.Authors))
 		}
 	}
 	walk(b.Sections, "")
 	if len(found) < 2 {
-		return []Work{{Title: b.Title, Author: b.AuthorNames(), TreePath: b.Title}}, false
+		return []Work{{Title: b.Title, Author: b.AuthorNames(), TreePath: b.Title, Section: nil}}, false
 	}
 	return found, true
 }
 
-func newWork(title, ctxAuthor string, authors []fb2.Author) Work {
+func newWork(s *fb2.Section, ctxAuthor string, authors []fb2.Author) Work {
 	author := ctxAuthor
 	if author == "" && len(authors) == 1 {
 		author = authors[0].Name()
 	}
-	tree := title
+	tree := s.Title
 	if ctxAuthor != "" {
-		tree = ctxAuthor + treeSep + title
+		tree = ctxAuthor + treeSep + s.Title
 	}
-	return Work{Title: title, Author: author, TreePath: tree}
+	return Work{Title: s.Title, Author: author, TreePath: tree, Section: s}
 }
 
 var (
