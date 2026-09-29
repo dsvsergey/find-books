@@ -186,7 +186,7 @@ func TestFormatAndStem(t *testing.T) {
 	if _, ok := formatOf("a.zip"); ok {
 		t.Error("plain .zip must not be a book")
 	}
-	if got := stem("Книга.fb2.zip"); got != "Книга" {
+	if got := Stem("Книга.fb2.zip"); got != "Книга" {
 		t.Errorf("stem = %q", got)
 	}
 }
