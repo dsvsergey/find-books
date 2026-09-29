@@ -12,6 +12,17 @@ func sec(title string, children ...*fb2.Section) *fb2.Section {
 	return &fb2.Section{Title: title, Children: children}
 }
 
+// tw is a Work without its section, for table comparisons.
+type tw struct{ Title, Author, TreePath string }
+
+func plain(ws []Work) []tw {
+	out := make([]tw, 0, len(ws))
+	for _, w := range ws {
+		out = append(out, tw{w.Title, w.Author, w.TreePath})
+	}
+	return out
+}
+
 func TestWorks(t *testing.T) {
 	nosov := fb2.Author{First: "Евгений", Middle: "Валентинович", Last: "Носов"}
 	pidorenko := fb2.Author{First: "Игорь", Last: "Пидоренко"}
@@ -21,7 +32,7 @@ func TestWorks(t *testing.T) {
 	tests := []struct {
 		name     string
 		book     fb2.Book
-		want     []Work
+		want     []tw
 		wantColl bool
 	}{
 		{
@@ -37,7 +48,7 @@ func TestWorks(t *testing.T) {
 					sec("ОБ АВТОРАХ ЭТОГО СБОРНИКА"),
 				},
 			},
-			want: []Work{
+			want: []tw{
 				{"ЗЕМЛЕЙ РОЖДЕННЫЕ", "Евгений Носов", "Евгений Носов › ЗЕМЛЕЙ РОЖДЕННЫЕ"},
 				{"ЧУЖИЕ ДЕТИ", "Игорь Пидоренко", "Игорь Пидоренко › ЧУЖИЕ ДЕТИ"},
 				{"НА «ОЛИМПЕ» ВСЕ СПОКОЙНО", "Олег Чарушников", "Олег Чарушников › НА «ОЛИМПЕ» ВСЕ СПОКОЙНО"},
@@ -54,7 +65,7 @@ func TestWorks(t *testing.T) {
 					sec("Часть вторая", sec("Глава 1 Ихтиандр")),
 				},
 			},
-			want:     []Work{{"Человек-амфибия", "Александр Беляев", "Человек-амфибия"}},
+			want:     []tw{{"Человек-амфибия", "Александр Беляев", "Человек-амфибия"}},
 			wantColl: false,
 		},
 		{
@@ -68,7 +79,7 @@ func TestWorks(t *testing.T) {
 					sec("Глава тринадцатая Вишну и парии"),
 				},
 			},
-			want:     []Work{{"Начистоту", "Александр Беляев", "Начистоту"}},
+			want:     []tw{{"Начистоту", "Александр Беляев", "Начистоту"}},
 			wantColl: false,
 		},
 		{
@@ -78,7 +89,7 @@ func TestWorks(t *testing.T) {
 				Authors:  []fb2.Author{sheckley},
 				Sections: []*fb2.Section{sec("Запах мысли"), sec("Страж-птица"), sec("Примечания")},
 			},
-			want: []Work{
+			want: []tw{
 				{"Запах мысли", "Роберт Шекли", "Запах мысли"},
 				{"Страж-птица", "Роберт Шекли", "Страж-птица"},
 			},
@@ -91,7 +102,7 @@ func TestWorks(t *testing.T) {
 				Authors:  []fb2.Author{sheckley},
 				Sections: []*fb2.Section{sec("Сборник «X»", sec("Рассказ А"), sec("Рассказ Б"))},
 			},
-			want: []Work{
+			want: []tw{
 				{"Рассказ А", "Роберт Шекли", "Рассказ А"},
 				{"Рассказ Б", "Роберт Шекли", "Рассказ Б"},
 			},
@@ -104,7 +115,7 @@ func TestWorks(t *testing.T) {
 				Authors:  []fb2.Author{nosov, pidorenko},
 				Sections: []*fb2.Section{sec("Рассказ А"), sec("Рассказ Б")},
 			},
-			want:     []Work{{"Рассказ А", "", "Рассказ А"}, {"Рассказ Б", "", "Рассказ Б"}},
+			want:     []tw{{"Рассказ А", "", "Рассказ А"}, {"Рассказ Б", "", "Рассказ Б"}},
 			wantColl: true,
 		},
 		{
@@ -114,7 +125,7 @@ func TestWorks(t *testing.T) {
 				Authors:  []fb2.Author{sheckley},
 				Sections: []*fb2.Section{sec("", sec("Рассказ А")), sec("* * *"), sec("Рассказ Б")},
 			},
-			want: []Work{
+			want: []tw{
 				{"Рассказ А", "Роберт Шекли", "Рассказ А"},
 				{"Рассказ Б", "Роберт Шекли", "Рассказ Б"},
 			},
@@ -127,7 +138,7 @@ func TestWorks(t *testing.T) {
 				Authors:  []fb2.Author{nosov, pidorenko},
 				Sections: []*fb2.Section{sec("Е. Носов", sec("Повесть")), sec("И. Пидоренко", sec("Рассказ"))},
 			},
-			want: []Work{
+			want: []tw{
 				{"Повесть", "Евгений Носов", "Евгений Носов › Повесть"},
 				{"Рассказ", "Игорь Пидоренко", "Игорь Пидоренко › Рассказ"},
 			},
@@ -140,7 +151,7 @@ func TestWorks(t *testing.T) {
 				Authors:  []fb2.Author{sheckley},
 				Sections: []*fb2.Section{sec("Предисловие"), sec("Повесть о странном"), sec("Примечания")},
 			},
-			want:     []Work{{"Повесть", "Роберт Шекли", "Повесть"}},
+			want:     []tw{{"Повесть", "Роберт Шекли", "Повесть"}},
 			wantColl: false,
 		},
 		{
@@ -153,7 +164,7 @@ func TestWorks(t *testing.T) {
 					sec("Рассказ Б"),
 				},
 			},
-			want: []Work{
+			want: []tw{
 				{"Носов", "", "Носов"},
 				{"Рассказ Б", "", "Рассказ Б"},
 			},
@@ -166,10 +177,32 @@ func TestWorks(t *testing.T) {
 			if coll != tt.wantColl {
 				t.Errorf("isCollection = %v, want %v", coll, tt.wantColl)
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("works =\n%q\nwant\n%q", got, tt.want)
+			if !reflect.DeepEqual(plain(got), tt.want) {
+				t.Errorf("works =\n%q\nwant\n%q", plain(got), tt.want)
 			}
 		})
+	}
+}
+
+func TestWorksSections(t *testing.T) {
+	nosov := fb2.Author{First: "Евгений", Last: "Носов"}
+	pidorenko := fb2.Author{First: "Игорь", Last: "Пидоренко"}
+	zemlei := sec("ЗЕМЛЕЙ РОЖДЕННЫЕ")
+	chuzhie := sec("ЧУЖИЕ ДЕТИ", sec("1"), sec("2"))
+	b := fb2.Book{
+		Title:    "Румбы",
+		Authors:  []fb2.Author{nosov, pidorenko},
+		Sections: []*fb2.Section{sec("Евгений Носов", zemlei), sec("Игорь Пидоренко", chuzhie)},
+	}
+	got, coll := Works(&b)
+	if !coll || len(got) != 2 || got[0].Section != zemlei || got[1].Section != chuzhie {
+		t.Fatalf("works = %+v, coll = %v", got, coll)
+	}
+
+	novel := fb2.Book{Title: "Роман", Authors: []fb2.Author{nosov}, Sections: []*fb2.Section{sec("Глава 1"), sec("Глава 2")}}
+	got, coll = Works(&novel)
+	if coll || len(got) != 1 || got[0].Section != nil {
+		t.Fatalf("novel works = %+v, coll = %v", got, coll)
 	}
 }
 

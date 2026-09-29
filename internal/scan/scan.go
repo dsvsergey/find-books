@@ -53,8 +53,8 @@ func formatOf(name string) (string, bool) {
 	return f, ok
 }
 
-// stem strips the book extension (".fb2.zip" counts as one).
-func stem(name string) string {
+// Stem strips the book extension (".fb2.zip" counts as one).
+func Stem(name string) string {
 	if hasZipFB2Suffix(name) {
 		return name[:len(name)-len(zipFB2)]
 	}
@@ -287,7 +287,7 @@ func parseAll(ctx context.Context, jobs []job) <-chan result {
 const failedSize = -1
 
 func parse(j job) (r result) {
-	title := stem(path.Base(j.rel))
+	title := Stem(path.Base(j.rel))
 	fallback := index.BookRecord{
 		RelPath: j.rel, Format: j.format, Size: j.size, MTime: j.mtime, Title: title,
 		Works: []index.WorkRecord{{Title: title, TreePath: title}},

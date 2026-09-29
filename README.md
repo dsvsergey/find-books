@@ -34,7 +34,9 @@ The interface is English by default. Ukrainian can be selected:
 
 Precedence: `--lang` > `FINDBOOKS_LANG` > saved setting > English.
 
-In the TUI: `enter` — open, `ctrl+l` — libraries, `ctrl+o` — show in Finder, `ctrl+y` — copy path, `tab` — search by author, `ctrl+g` — language, `↑`/`↓` — select, `esc` — quit.
+In the TUI: `enter` — open, `ctrl+r` — preview the work's text (FB2, TXT), `ctrl+l` — libraries, `ctrl+o` — show in Finder, `ctrl+y` — copy path, `tab` — search by author, `ctrl+g` — language, `↑`/`↓` — select, `esc` — quit.
+
+The preview opens a collection right at the found work; `↑`/`↓`, `pgup`/`pgdn`/`space`, `home`/`end` scroll, `enter` opens the book in an app, `esc` returns to the results. The library's disk must be mounted.
 
 ### Libraries in the TUI
 

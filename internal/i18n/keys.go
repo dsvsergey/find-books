@@ -103,6 +103,12 @@ const (
 	KeyLabelFile
 	KeyLabelContents
 	KeyLangSaveFailed
+	KeyPreviewLoading
+	KeyPreviewUnsupported
+	KeyPreviewFailed
+	KeyPreviewStale
+	KeyPreviewHelp
+	KeyIllustration
 
 	keyCount
 )

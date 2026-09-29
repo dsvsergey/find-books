@@ -13,11 +13,13 @@ type Query struct {
 
 type Hit struct {
 	WorkID                        int64
+	WorkOrd                       int // position of the work in its book
 	Title, Author, TreePath       string
 	BookID                        int64
 	BookTitle, BookYear           string
 	IsCollection                  bool
 	RelPath, Format               string
+	Size, MTime                   int64 // as indexed; Size -1 if the parse failed
 	LibraryName                   string
 	VolumeID, VolumeName, RootRel string
 }
@@ -34,8 +36,8 @@ func MatchExpr(text string) string {
 }
 
 const searchSQL = `
-SELECT w.id, w.title, w.author, w.tree_path,
-       b.id, b.title, b.year, b.is_collection, b.rel_path, b.format,
+SELECT w.id, w.ord, w.title, w.author, w.tree_path,
+       b.id, b.title, b.year, b.is_collection, b.rel_path, b.format, b.size, b.mtime,
        l.name, l.volume_id, l.volume_name, l.root_rel
 FROM works_fts
 JOIN works w ON w.id = works_fts.rowid
@@ -70,8 +72,8 @@ func (s *Store) Search(q Query) ([]Hit, error) {
 	var hits []Hit
 	for rows.Next() {
 		var h Hit
-		if err := rows.Scan(&h.WorkID, &h.Title, &h.Author, &h.TreePath,
-			&h.BookID, &h.BookTitle, &h.BookYear, &h.IsCollection, &h.RelPath, &h.Format,
+		if err := rows.Scan(&h.WorkID, &h.WorkOrd, &h.Title, &h.Author, &h.TreePath,
+			&h.BookID, &h.BookTitle, &h.BookYear, &h.IsCollection, &h.RelPath, &h.Format, &h.Size, &h.MTime,
 			&h.LibraryName, &h.VolumeID, &h.VolumeName, &h.RootRel); err != nil {
 			return nil, err
 		}

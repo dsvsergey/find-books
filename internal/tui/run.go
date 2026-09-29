@@ -15,6 +15,7 @@ import (
 	"findbooks/internal/libman"
 	"findbooks/internal/library"
 	"findbooks/internal/platform"
+	"findbooks/internal/preview"
 	"findbooks/internal/scan"
 )
 
@@ -30,6 +31,7 @@ func DefaultActions() Actions {
 		Exists:       func(p string) bool { _, err := os.Stat(p); return err == nil },
 		ChooseFolder: platform.ChooseFolder,
 		Getenv:       os.Getenv,
+		Preview:      preview.Load,
 		SaveLang: func(i18n.Lang) error {
 			saveLangMu.Lock()
 			defer saveLangMu.Unlock()

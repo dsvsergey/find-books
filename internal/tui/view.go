@@ -29,6 +29,9 @@ func (m Model) View() tea.View {
 }
 
 func (m Model) render() string {
+	if m.screen == screenPreview {
+		return m.renderPreview()
+	}
 	if m.screen == screenLibraries {
 		return m.renderLibraries()
 	}

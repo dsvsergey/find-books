@@ -59,6 +59,14 @@ func TestSearchAuthorFilter(t *testing.T) {
 	mustHits(t, st, Query{Text: "земле", Author: "носов"}, 1)
 }
 
+func TestSearchReturnsOrdAndStamp(t *testing.T) {
+	st := seeded(t)
+	h := mustHits(t, st, Query{Text: "чужие дети"}, 1)[0]
+	if h.WorkOrd != 1 || h.Size != rumby.Size || h.MTime != rumby.MTime {
+		t.Fatalf("WorkOrd=%d Size=%d MTime=%d, want 1 %d %d", h.WorkOrd, h.Size, h.MTime, rumby.Size, rumby.MTime)
+	}
+}
+
 func TestSearchHostileInput(t *testing.T) {
 	st := seeded(t)
 	for _, q := range []string{`"`, `*`, `чуж*"`, `NEAR(a b)`, `title:x`, `-дети`, `AND`, `OR NOT`, `')--`, `{title}: x`} {
