@@ -14,10 +14,10 @@ go build -o findbooks ./cmd/findbooks
 
 ```bash
 findbooks add '/Volumes/dsvDev/Library/Soviet Sci-Fi'   # register and index
-findbooks                                                # interactive search and library management
-findbooks search alien children                          # search from the command line
+findbooks                                               # interactive search and library management
+findbooks search чужие дети                             # search from the command line ("alien children")
 findbooks search --author pidorenko --json
-findbooks update --all                                   # re-index changed files
+findbooks update --all                                  # re-index changed files
 findbooks list
 findbooks remove 'Soviet Sci-Fi'
 ```
@@ -47,4 +47,4 @@ If the index is empty, `findbooks` opens the "Libraries" screen; `ctrl+l` leads 
 
 The keys also work on a Ukrainian keyboard layout (`ф`, `г`, `в`, `н`).
 
-FB2 (and `.fb2.zip`) is indexed along with the table of contents of collections; PDF, DJVU, DOC, DOCX, RTF, TXT, EPUB, MOBI are indexed by file name and folder.
+FB2 (and `.fb2.zip`) files are indexed along with the table of contents of collections; PDF, DJVU, DOC, DOCX, RTF, TXT, EPUB, MOBI are indexed by file name and folder.
