@@ -50,8 +50,5 @@
   "48": "NewRootCmd",
   "49": "catalog_en.go",
   "50": "catalog_uk.go",
-  "51": "newAddCmd",
-  "52": "newSearchCmd",
-  "53": "newListCmd",
-  "54": ".renderLibraries"
+  "51": "newAddCmd"
 }

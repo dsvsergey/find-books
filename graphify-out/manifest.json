@@ -165,13 +165,13 @@
     "semantic_hash": ""
   },
   "internal/tui/model.go": {
-    "mtime": 1790706583.7991924,
-    "ast_hash": "769d459d017efc7795319bbf9db64fc5",
+    "mtime": 1790713968.2071388,
+    "ast_hash": "866086b67522410357995225ea838003",
     "semantic_hash": ""
   },
   "internal/tui/model_test.go": {
-    "mtime": 1790706583.7994962,
-    "ast_hash": "eb89919a47c17543adc92c75e32bd561",
+    "mtime": 1790713875.4779592,
+    "ast_hash": "1403d76f6006cc6759cc9db64e819a70",
     "semantic_hash": ""
   },
   "internal/tui/rank.go": {
@@ -180,18 +180,18 @@
     "semantic_hash": ""
   },
   "internal/tui/run.go": {
-    "mtime": 1790706583.799856,
-    "ast_hash": "cd7e46af99a16ee329133196dd9cf3ed",
+    "mtime": 1790714022.2350442,
+    "ast_hash": "e4d8c1e20f470cb33e84fccee6dedc25",
     "semantic_hash": ""
   },
   "internal/tui/view.go": {
-    "mtime": 1790706583.800286,
-    "ast_hash": "2df037e236b7e6d50389449dedf60445",
+    "mtime": 1790714009.1278083,
+    "ast_hash": "5886e2596270725abf2cf0afce8252bd",
     "semantic_hash": ""
   },
   "README.md": {
-    "mtime": 1790706583.7483459,
-    "ast_hash": "f7b4ad2c88150b4ebe45a8a890428d72",
+    "mtime": 1790714291.9786847,
+    "ast_hash": "a48a280c0ca6c1c2cf38126f54e76c3d",
     "semantic_hash": ""
   },
   "docs/superpowers/plans/2026-09-29-findbooks.md": {
@@ -285,13 +285,13 @@
     "semantic_hash": ""
   },
   "internal/i18n/catalog_en.go": {
-    "mtime": 1790706583.794247,
-    "ast_hash": "c3d0d75da5acd272f560a19676b32d81",
+    "mtime": 1790713172.7436843,
+    "ast_hash": "e638dcd3e7e7e44635b53846e82f707a",
     "semantic_hash": ""
   },
   "internal/i18n/catalog_uk.go": {
-    "mtime": 1790706583.7945015,
-    "ast_hash": "ea3a179a3ae8ae4e9ecc345cfb2e140e",
+    "mtime": 1790713174.806385,
+    "ast_hash": "0a5174a9064d08309b84dffbdfb3e51b",
     "semantic_hash": ""
   },
   "internal/i18n/i18n.go": {
@@ -305,8 +305,8 @@
     "semantic_hash": ""
   },
   "internal/i18n/keys.go": {
-    "mtime": 1790706583.7951534,
-    "ast_hash": "446bdb9c5d8240f4e528ea9234e5b1cb",
+    "mtime": 1790713158.044241,
+    "ast_hash": "5b99c767b3a57bafe8c9f3981609b2c8",
     "semantic_hash": ""
   },
   "internal/index/main_test.go": {
@@ -345,8 +345,8 @@
     "semantic_hash": ""
   },
   "README.uk.md": {
-    "mtime": 1790706583.7485917,
-    "ast_hash": "bd07a6e411da11ee301adf06993b9ab2",
+    "mtime": 1790714297.9108949,
+    "ast_hash": "303ec3607e7bd576be77bc9104a6f390",
     "semantic_hash": ""
   },
   "internal/fb2/text.go": {
@@ -360,8 +360,8 @@
     "semantic_hash": ""
   },
   ".superpowers/sdd/2026-09-29-preview/progress.md": {
-    "mtime": 1790712053.1927698,
-    "ast_hash": "2081eb2240f3ec44b25045fcd0df413b",
+    "mtime": 1790714265.8406556,
+    "ast_hash": "f7075e311ba096e6d35538a6b748c381",
     "semantic_hash": ""
   },
   ".superpowers/sdd/2026-09-29-preview/task-1-brief.md": {
@@ -415,18 +415,18 @@
     "semantic_hash": ""
   },
   "internal/preview/fb2.go": {
-    "mtime": 1790712190.2456825,
-    "ast_hash": "f516115df91e4ddeefb094ce3dc14e5b",
+    "mtime": 1790712636.6527708,
+    "ast_hash": "48ebddc79297fd49e0aae414407c2d0d",
     "semantic_hash": ""
   },
   "internal/preview/preview.go": {
-    "mtime": 1790712180.8443244,
+    "mtime": 1790712906.7404535,
     "ast_hash": "1ff8853f2fc84bdaa270b778bea4bb53",
     "semantic_hash": ""
   },
   "internal/preview/preview_test.go": {
-    "mtime": 1790712166.7636204,
-    "ast_hash": "0336a57c659f607a36413be10e77d518",
+    "mtime": 1790712708.039814,
+    "ast_hash": "430e7174cfbd047e8cced10d57d640e3",
     "semantic_hash": ""
   },
   "internal/preview/txt.go": {
@@ -437,6 +437,41 @@
   ".superpowers/sdd/2026-09-29-preview/task-2-3-report.md": {
     "mtime": 1790711907.4078786,
     "ast_hash": "c5829526a3070aa3e7335e278c020395",
+    "semantic_hash": ""
+  },
+  "internal/tui/preview.go": {
+    "mtime": 1790713982.0294533,
+    "ast_hash": "a35c2b41b4d19f5aa202e6d02622b0f1",
+    "semantic_hash": ""
+  },
+  "internal/tui/preview_test.go": {
+    "mtime": 1790713904.06874,
+    "ast_hash": "c7e3bf8fe845553199f3464c3aeb1881",
+    "semantic_hash": ""
+  },
+  "internal/tui/preview_view.go": {
+    "mtime": 1790714003.7624848,
+    "ast_hash": "14de5da2529c79575d8f157705ac2edb",
+    "semantic_hash": ""
+  },
+  "internal/tui/preview_view_test.go": {
+    "mtime": 1790713253.9056115,
+    "ast_hash": "7067afa5b4a4aeb4a6aaaf89462fb393",
+    "semantic_hash": ""
+  },
+  ".superpowers/sdd/2026-09-29-preview/task-4-report.md": {
+    "mtime": 1790713012.744202,
+    "ast_hash": "eddf65af04f4dc1aadfd849a5bb1a473",
+    "semantic_hash": ""
+  },
+  ".superpowers/sdd/2026-09-29-preview/task-5-report.md": {
+    "mtime": 1790713474.669612,
+    "ast_hash": "2358cd80af2e4b1f1393914e4f0e1116",
+    "semantic_hash": ""
+  },
+  ".superpowers/sdd/2026-09-29-preview/task-6-report.md": {
+    "mtime": 1790714124.7449014,
+    "ast_hash": "fb0622b7262d095f5308c6c9b01715b9",
     "semantic_hash": ""
   }
 }

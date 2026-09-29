@@ -50,13 +50,13 @@
     "semantic_hash": ""
   },
   "internal/extract/extract.go": {
-    "mtime": 1790694909.1671264,
-    "ast_hash": "587967108cd440817c45135104cec574",
+    "mtime": 1790711805.56314,
+    "ast_hash": "9abba809e4e4ae1c4523132c56b1df22",
     "semantic_hash": ""
   },
   "internal/extract/extract_test.go": {
-    "mtime": 1790694909.1674318,
-    "ast_hash": "413a65026770fe71a674568ec3acf614",
+    "mtime": 1790711781.0005963,
+    "ast_hash": "10b23b6b1951f9a2cf263439684732a2",
     "semantic_hash": ""
   },
   "internal/fb2/fb2.go": {
@@ -85,13 +85,13 @@
     "semantic_hash": ""
   },
   "internal/index/search.go": {
-    "mtime": 1790694909.1707983,
-    "ast_hash": "9876ee7c1658160b1d127f4fb562ff21",
+    "mtime": 1790711864.2294922,
+    "ast_hash": "0a0e7c40678b43cf1ee0f229c9c65fee",
     "semantic_hash": ""
   },
   "internal/index/search_test.go": {
-    "mtime": 1790694909.1710536,
-    "ast_hash": "7fc54a467b1c9e81db28cede2130bc09",
+    "mtime": 1790711840.638564,
+    "ast_hash": "914986ec08400603b504dc24b68eb04f",
     "semantic_hash": ""
   },
   "internal/index/store.go": {
@@ -145,13 +145,13 @@
     "semantic_hash": ""
   },
   "internal/scan/scan.go": {
-    "mtime": 1790706583.7973077,
-    "ast_hash": "06e56a7c0949c61d759ba7cf9b58e2d2",
+    "mtime": 1790712123.1689613,
+    "ast_hash": "ab45354e1a30555e79d3a5ae7d9a9f22",
     "semantic_hash": ""
   },
   "internal/scan/scan_test.go": {
-    "mtime": 1790694909.175363,
-    "ast_hash": "8cb0d3debd4eb635c3c3f1f33834f0c6",
+    "mtime": 1790712129.5690968,
+    "ast_hash": "d66259b3e6cfba450c2bd5918e82f241",
     "semantic_hash": ""
   },
   "internal/textnorm/textnorm.go": {
@@ -360,8 +360,8 @@
     "semantic_hash": ""
   },
   ".superpowers/sdd/2026-09-29-preview/progress.md": {
-    "mtime": 1790711119.6608996,
-    "ast_hash": "0024ff7ef3cdbe75c460dd891f80baa5",
+    "mtime": 1790712053.1927698,
+    "ast_hash": "2081eb2240f3ec44b25045fcd0df413b",
     "semantic_hash": ""
   },
   ".superpowers/sdd/2026-09-29-preview/task-1-brief.md": {
@@ -370,8 +370,8 @@
     "semantic_hash": ""
   },
   ".superpowers/sdd/2026-09-29-preview/task-1-report.md": {
-    "mtime": 1790711395.9288461,
-    "ast_hash": "b9b5713a5a3efaffe53ce085026be1c7",
+    "mtime": 1790711429.6859713,
+    "ast_hash": "30eeee89b3b475691d81c6139a6a9dab",
     "semantic_hash": ""
   },
   ".superpowers/sdd/2026-09-29-preview/task-2-brief.md": {
@@ -412,6 +412,31 @@
   "docs/superpowers/specs/2026-09-29-findbooks-preview-design.md": {
     "mtime": 1790707895.532954,
     "ast_hash": "d3917d94d44261e28fe931f6346f058a",
+    "semantic_hash": ""
+  },
+  "internal/preview/fb2.go": {
+    "mtime": 1790712190.2456825,
+    "ast_hash": "f516115df91e4ddeefb094ce3dc14e5b",
+    "semantic_hash": ""
+  },
+  "internal/preview/preview.go": {
+    "mtime": 1790712180.8443244,
+    "ast_hash": "1ff8853f2fc84bdaa270b778bea4bb53",
+    "semantic_hash": ""
+  },
+  "internal/preview/preview_test.go": {
+    "mtime": 1790712166.7636204,
+    "ast_hash": "0336a57c659f607a36413be10e77d518",
+    "semantic_hash": ""
+  },
+  "internal/preview/txt.go": {
+    "mtime": 1790712199.8008502,
+    "ast_hash": "ce17a0f77c4885d3c850da97f41908be",
+    "semantic_hash": ""
+  },
+  ".superpowers/sdd/2026-09-29-preview/task-2-3-report.md": {
+    "mtime": 1790711907.4078786,
+    "ast_hash": "c5829526a3070aa3e7335e278c020395",
     "semantic_hash": ""
   }
 }
