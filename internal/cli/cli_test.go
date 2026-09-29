@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 	"testing"
 
@@ -176,8 +177,13 @@ func TestSearchRequiresQuery(t *testing.T) {
 
 func TestRootCommandStartsTUI(t *testing.T) {
 	db := filepath.Join(t.TempDir(), "index.db")
-	if _, _, err := run(t, db); !errors.Is(err, errNoLibraries) {
-		t.Fatalf("empty index: err = %v, want errNoLibraries", err)
+	var calls []int
+	orig := runTUI
+	runTUI = func(_ *index.Store, total int) error { calls = append(calls, total); return nil }
+	t.Cleanup(func() { runTUI = orig })
+
+	if _, _, err := run(t, db); err != nil {
+		t.Fatalf("empty index: err = %v, want TUI to start", err)
 	}
 	st, err := index.Open(db)
 	if err != nil {
@@ -186,13 +192,11 @@ func TestRootCommandStartsTUI(t *testing.T) {
 	lib, _ := st.AddLibrary("A", "VOL", "Disk", ".")
 	st.WriteBatch(lib.ID, []index.BookRecord{{RelPath: "a.pdf", Format: "pdf", Title: "A", Works: []index.WorkRecord{{Title: "A", TreePath: "A"}}}}, nil)
 	st.Close()
-
-	var gotTotal int
-	orig := runTUI
-	runTUI = func(_ *index.Store, total int) error { gotTotal = total; return nil }
-	t.Cleanup(func() { runTUI = orig })
-	if _, _, err := run(t, db); err != nil || gotTotal != 1 {
-		t.Fatalf("err = %v, total = %d", err, gotTotal)
+	if _, _, err := run(t, db); err != nil {
+		t.Fatal(err)
+	}
+	if !slices.Equal(calls, []int{0, 1}) {
+		t.Fatalf("runTUI totals = %v, want [0 1]", calls)
 	}
 }
 

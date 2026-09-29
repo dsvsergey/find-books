@@ -90,9 +90,6 @@ func NewRootCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			if total == 0 {
-				return errNoLibraries
-			}
 			return runTUI(st, total)
 		},
 	}
