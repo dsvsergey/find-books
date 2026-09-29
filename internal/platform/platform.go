@@ -12,6 +12,9 @@ import (
 // ErrUnsupported is returned by functions not yet implemented for this OS.
 var ErrUnsupported = errors.New("platform: not supported on this OS yet")
 
+// ErrCanceled is returned when the user dismisses an OS dialog.
+var ErrCanceled = errors.New("platform: canceled by user")
+
 // DataDir returns (and creates) the directory that holds index.db:
 // %LOCALAPPDATA%\findbooks on Windows, $XDG_DATA_HOME/findbooks or
 // ~/.local/share/findbooks elsewhere.

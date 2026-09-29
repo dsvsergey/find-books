@@ -260,3 +260,35 @@ func plistStrings(data []byte) (map[string]string, error) {
 		}
 	}
 }
+
+// chooseFolderScript receives the prompt as argv so quotes in it cannot
+// break the AppleScript source.
+const chooseFolderScript = `on run argv
+	return POSIX path of (choose folder with prompt (item 1 of argv))
+end run`
+
+// runOsascript runs osascript with args; replaced in tests.
+var runOsascript = func(args ...string) (stdout, stderr string, err error) {
+	cmd := exec.Command("osascript", args...)
+	var out, errb bytes.Buffer
+	cmd.Stdout, cmd.Stderr = &out, &errb
+	err = cmd.Run()
+	return out.String(), errb.String(), err
+}
+
+// ChooseFolder shows the Finder "choose folder" dialog and returns the
+// selected folder's absolute path, or ErrCanceled if the user dismissed it.
+func ChooseFolder(prompt string) (string, error) {
+	out, errOut, err := runOsascript("-e", chooseFolderScript, prompt)
+	if err != nil {
+		if strings.Contains(errOut, "(-128)") {
+			return "", ErrCanceled
+		}
+		return "", fmt.Errorf("osascript: %w: %s", err, strings.TrimSpace(errOut))
+	}
+	p := strings.TrimSuffix(out, "\n")
+	if len(p) > 1 {
+		p = strings.TrimSuffix(p, "/")
+	}
+	return p, nil
+}

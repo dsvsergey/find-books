@@ -204,3 +204,52 @@ func TestVolumeIDFallsBackToMountWhenDiskutilFails(t *testing.T) {
 		t.Fatalf("after diskutil recovers: id = %q, %v", id2, err)
 	}
 }
+
+func stubOsascript(t *testing.T, stdout, stderr string, err error) *[]string {
+	t.Helper()
+	var got []string
+	orig := runOsascript
+	runOsascript = func(args ...string) (string, string, error) {
+		got = args
+		return stdout, stderr, err
+	}
+	t.Cleanup(func() { runOsascript = orig })
+	return &got
+}
+
+func TestChooseFolderReturnsPath(t *testing.T) {
+	args := stubOsascript(t, "/Volumes/dsvDev/Книги/\n", "", nil)
+	prompt := `Виберіть «теку» "x"`
+	p, err := ChooseFolder(prompt)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if p != "/Volumes/dsvDev/Книги" {
+		t.Fatalf("path = %q", p)
+	}
+	if len(*args) != 3 || (*args)[0] != "-e" || (*args)[2] != prompt {
+		t.Fatalf("osascript args = %q (prompt must be passed verbatim as argv)", *args)
+	}
+}
+
+func TestChooseFolderRoot(t *testing.T) {
+	stubOsascript(t, "/\n", "", nil)
+	if p, err := ChooseFolder("x"); err != nil || p != "/" {
+		t.Fatalf("got %q, %v", p, err)
+	}
+}
+
+func TestChooseFolderCanceled(t *testing.T) {
+	stubOsascript(t, "", "0:98: execution error: User cancelled. (-128)\n", errors.New("exit status 1"))
+	if _, err := ChooseFolder("x"); !errors.Is(err, ErrCanceled) {
+		t.Fatalf("err = %v, want ErrCanceled", err)
+	}
+}
+
+func TestChooseFolderOtherError(t *testing.T) {
+	stubOsascript(t, "", "boom happened\n", errors.New("exit status 1"))
+	_, err := ChooseFolder("x")
+	if err == nil || errors.Is(err, ErrCanceled) || !strings.Contains(err.Error(), "boom happened") {
+		t.Fatalf("err = %v", err)
+	}
+}

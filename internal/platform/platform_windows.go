@@ -7,3 +7,4 @@ func VolumeID(path string) (id, name string, err error) { return "", "", ErrUnsu
 func MountPoint(volumeID string) (string, bool)         { return "", false }
 func Open(path string) error                            { return ErrUnsupported }
 func Reveal(path string) error                          { return ErrUnsupported }
+func ChooseFolder(prompt string) (string, error)        { return "", ErrUnsupported }
