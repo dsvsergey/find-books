@@ -41,7 +41,7 @@ func setup(t *testing.T) (*index.Store, index.Library, string) {
 	write(t, filepath.Join(root, filepath.FromSlash(novelRel)), fixture(t, "novel.fb2"))
 	write(t, filepath.Join(root, "Авторы", "Беляев Александр", "Звезда КЭЦ.pdf"), []byte("%PDF-1.4"))
 	write(t, filepath.Join(root, "broken.fb2"), []byte("<FictionBook><body><section>"))
-	write(t, filepath.Join(root, "Бойцов - Рассказы.txt"), []byte("text")) // NFD name
+	write(t, filepath.Join(root, "Бойцов - Рассказы.txt"), []byte("text")) // NFD name
 	// ignored:
 	write(t, filepath.Join(root, ".DS_Store"), []byte("x"))
 	write(t, filepath.Join(root, "Авторы", "Беляев Александр", "._Человек-амфибия.fb2"), []byte("x"))
@@ -71,6 +71,18 @@ func hits(t *testing.T, st *index.Store, q string) []index.Hit {
 
 func TestRunIndexesLibrary(t *testing.T) {
 	st, lib, root := setup(t)
+	// Guard: verify NFD fixture is decomposed
+	entries, _ := os.ReadDir(root)
+	found := false
+	for _, e := range entries {
+		if strings.Contains(e.Name(), "̆") {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatal("NFD fixture was normalized to NFC; test cannot verify decomposed names")
+	}
 	var last Progress
 	rep, err := Run(context.Background(), st, lib.ID, root, func(p Progress) { last = p })
 	if err != nil {
