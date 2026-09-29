@@ -10,9 +10,9 @@ func TestNormalize(t *testing.T) {
 		{"Операция «ПРОГРЕССОР»", "операция прогрессор"},
 		{"…ТОЖЕ РЕЗУЛЬТАТ", "тоже результат"},
 		{"13-Й ПОДВИГ ГЕРАКЛА", "13 й подвиг геракла"},
-		{"за́мок", "замок"},             // stress accent
-		{"Бойцов", "бойцов"},            // NFD й from macOS file names
-		{"Її ґанок", "її ґанок"},              // Ukrainian letters survive
+		{"за́мок", "замок"},      // stress accent
+		{"Бойцов", "бойцов"},    // NFD й from macOS file names
+		{"Її ґанок", "її ґанок"}, // Ukrainian letters survive
 		{"* * *", ""},
 		{"", ""},
 		{"Tom's  Diner", "tom s diner"},
