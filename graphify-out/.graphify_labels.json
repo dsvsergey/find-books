@@ -46,7 +46,12 @@
   "44": "TestMain",
   "45": "TestMain",
   "46": "task-4-brief.md",
-  "48": "task-5-brief.md",
+  "47": "Task 2 & 3 Implementation Report",
+  "48": "NewRootCmd",
   "49": "catalog_en.go",
-  "50": "catalog_uk.go"
+  "50": "catalog_uk.go",
+  "51": "newAddCmd",
+  "52": "newSearchCmd",
+  "53": "newListCmd",
+  "54": ".renderLibraries"
 }
