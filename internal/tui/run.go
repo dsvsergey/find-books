@@ -8,6 +8,8 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
+	"findbooks/internal/config"
+	"findbooks/internal/i18n"
 	"findbooks/internal/index"
 	"findbooks/internal/libman"
 	"findbooks/internal/library"
@@ -21,6 +23,11 @@ func DefaultActions() Actions {
 		Root: library.Root, Open: platform.Open, Reveal: platform.Reveal, Copy: clipboard.WriteAll,
 		Exists:       func(p string) bool { _, err := os.Stat(p); return err == nil },
 		ChooseFolder: platform.ChooseFolder,
+		SaveLang: func(l i18n.Lang) error {
+			c, _ := config.Load()
+			c.Lang = string(l)
+			return config.Save(c)
+		},
 	}
 }
 

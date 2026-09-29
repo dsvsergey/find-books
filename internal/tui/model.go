@@ -3,13 +3,13 @@ package tui
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"charm.land/bubbles/v2/progress"
 	"charm.land/bubbles/v2/textinput"
 	tea "charm.land/bubbletea/v2"
 
+	"findbooks/internal/i18n"
 	"findbooks/internal/index"
 	"findbooks/internal/library"
 	"findbooks/internal/scan"
@@ -41,6 +41,7 @@ type Actions struct {
 	Copy         func(text string) error
 	Exists       func(path string) bool // does the file exist on the mounted disk
 	ChooseFolder func(prompt string) (string, error)
+	SaveLang     func(i18n.Lang) error
 }
 
 const (
@@ -56,6 +57,10 @@ const (
 )
 
 type searchMsg struct{ seq int }
+
+// langSavedMsg reports the result of the background call to Actions.SaveLang
+// triggered by toggleLang.
+type langSavedMsg struct{ err error }
 
 type resultsMsg struct {
 	seq    int
@@ -102,7 +107,11 @@ type Model struct {
 func New(b Backend, act Actions, total int) Model {
 	in := textinput.New()
 	in.Prompt = "🔎 "
-	in.Placeholder = "назва твору, автор або збірка…"
+	in.Placeholder = i18n.T(i18n.KeySearchPlaceholder)
+	// A sane default width so the placeholder renders in full before the
+	// first tea.WindowSizeMsg arrives (textinput truncates it to one
+	// character at width 0); Update replaces this with the real width.
+	in.SetWidth(max(10, 100-20))
 	in.Focus()
 	m := Model{
 		b: b, act: act, total: total, input: in,
@@ -144,6 +153,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.updateLibraries(msg)
 	case quitTimeoutMsg:
 		return m, tea.Quit
+	case langSavedMsg:
+		if msg.err != nil {
+			m.status = i18n.T(i18n.KeyLangSaveFailed, msg.err.Error())
+		}
+		return m, nil
 	case tea.KeyPressMsg:
 		if m.screen == screenLibraries {
 			return m.libraryKey(msg)
@@ -155,6 +169,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.screen = screenLibraries
 			m.status = ""
 			return m, m.loadLibraries()
+		case "ctrl+g":
+			return m, m.toggleLang()
 		case "up", "ctrl+p":
 			m.move(-1)
 			return m, nil
@@ -168,7 +184,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.withFile(m.act.Reveal, "")
 			return m, nil
 		case "ctrl+y":
-			m.withFile(m.act.Copy, "Шлях скопійовано")
+			m.withFile(m.act.Copy, i18n.T(i18n.KeyPathCopied))
 			return m, nil
 		case "tab":
 			if h := m.selected(); h != nil && h.Author != "" {
@@ -189,6 +205,19 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Batch(cmd, m.queueSearch())
 	}
 	return m, cmd
+}
+
+// toggleLang switches EN↔UK, refreshes texts cached in widgets and saves the
+// choice in the background.
+func (m *Model) toggleLang() tea.Cmd {
+	next := i18n.UK
+	if i18n.Current() == i18n.UK {
+		next = i18n.EN
+	}
+	i18n.Set(next)
+	m.input.Placeholder = i18n.T(i18n.KeySearchPlaceholder)
+	save := m.act.SaveLang
+	return func() tea.Msg { return langSavedMsg{err: save(next)} }
 }
 
 // queueSearch starts a new debounce period; only the latest one searches.
@@ -237,16 +266,16 @@ func (m *Model) withFile(fn func(string) error, okStatus string) {
 	}
 	root, ok := m.act.Root(h.VolumeID, h.RootRel)
 	if !ok {
-		m.status = fmt.Sprintf("Диск «%s» не підключено — підключіть його, щоб відкрити файл", h.VolumeName)
+		m.status = i18n.T(i18n.KeyDiskOfflineOpen, h.VolumeName)
 		return
 	}
 	p := library.FilePath(root, h.RelPath)
 	if !m.act.Exists(p) {
-		m.status = "Файл не знайдено: " + h.RelPath
+		m.status = i18n.T(i18n.KeyFileNotFound, h.RelPath)
 		return
 	}
 	if err := fn(p); err != nil {
-		m.status = "Помилка: " + err.Error()
+		m.status = i18n.T(i18n.KeyErrorStatus, err.Error())
 		return
 	}
 	m.status = okStatus
