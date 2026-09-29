@@ -69,7 +69,7 @@ var (
 	noiseContains = []string{"об авторах", "об авторе", "библиограф"}
 	numberRe      = regexp.MustCompile(`^[0-9]+$`)
 	romanRe       = regexp.MustCompile(`^m{0,3}(cm|cd|d?c{0,3})(xc|xl|l?x{0,3})(ix|iv|v?i{0,3})$`)
-	chapterRe     = regexp.MustCompile(`^(глава|часть|книга|том|раздел|chapter|part) (([0-9]+|[ivxlcdm]+)( |$)|перв|втор|трет|четв|пят|шест|седьм|восьм|девят|десят|one|two|three)`)
+	chapterRe     = regexp.MustCompile(`^(глава|chapter) |^(часть|книга|том|раздел|part) (([0-9]+|[ivxlcdm]+)( |$)|перв|втор|трет|четв|пят|шест|седьм|восьм|девят|десят|одиннадцат|двенадцат|тринадцат|четырнадцат|пятнадцат|шестнадцат|семнадцат|восемнадцат|девятнадцат|двадцат|тридцат|сорок|пятидесят|последн|заключительн|one|two|three)`)
 )
 
 // isNoise reports whether a normalized, non-empty title is structural or

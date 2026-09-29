@@ -58,6 +58,20 @@ func TestWorks(t *testing.T) {
 			wantColl: false,
 		},
 		{
+			name: "novel with high-numbered chapter ordinals is not a collection",
+			book: fb2.Book{
+				Title:   "Начистоту",
+				Authors: []fb2.Author{{First: "Александр", Last: "Беляев"}},
+				Sections: []*fb2.Section{
+					sec("Глава одиннадцатая Начистоту, или оба хороши"),
+					sec("Глава двенадцатая «Воздушные зайцы»"),
+					sec("Глава тринадцатая Вишну и парии"),
+				},
+			},
+			want:     []Work{{"Начистоту", "Александр Беляев", "Начистоту"}},
+			wantColl: false,
+		},
+		{
 			name: "single-author story collection",
 			book: fb2.Book{
 				Title:    "Рассказы",
@@ -167,12 +181,12 @@ func TestMatchAuthor(t *testing.T) {
 		input string
 		want  string
 	}{
-		{"Носов", ""},                        // bare surname, no match
-		{"Евгений Носов", "Евгений Носов"},    // first + last
-		{"Носов Евгений", "Евгений Носов"},    // last + first
-		{"Е. Носов", "Евгений Носов"},         // initial + last
+		{"Носов", ""}, // bare surname, no match
+		{"Евгений Носов", "Евгений Носов"},              // first + last
+		{"Носов Евгений", "Евгений Носов"},              // last + first
+		{"Е. Носов", "Евгений Носов"},                   // initial + last
 		{"Евгений Валентинович Носов", "Евгений Носов"}, // full name
-		{"Евгений В. Носов", "Евгений Носов"}, // first + middle initial + last
+		{"Евгений В. Носов", "Евгений Носов"},           // first + middle initial + last
 	}
 
 	for _, tt := range tests {
@@ -190,6 +204,15 @@ func TestIsNoise(t *testing.T) {
 		"часть вторая": true, "пролог": true, "примечания": true, "об авторе": true,
 		"предисловие": true, "книга пятая": true,
 		"книга мертвых": false, "чужие дети": false, "civil": false, "часть тела": false,
+		"глава одиннадцатая":                          true,
+		"глава двенадцатая воздушные зайцы":           true,
+		"глава одиннадцатая начистоту или оба хороши": true,
+		"chapter eleven":     true,
+		"часть одиннадцатая": true,
+		"книга двадцатая":    true,
+		"том последний":      true,
+		"часть возможного":   false,
+		"часть этого мира":   false,
 	}
 	for in, want := range tests {
 		if got := isNoise(in); got != want {
