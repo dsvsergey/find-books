@@ -3,11 +3,14 @@ package tui
 import (
 	"context"
 	"os"
+	"sync"
 
 	"github.com/atotto/clipboard"
 
 	tea "charm.land/bubbletea/v2"
 
+	"findbooks/internal/config"
+	"findbooks/internal/i18n"
 	"findbooks/internal/index"
 	"findbooks/internal/libman"
 	"findbooks/internal/library"
@@ -15,12 +18,31 @@ import (
 	"findbooks/internal/scan"
 )
 
+// saveLangMu serializes the Load→Save sequence in DefaultActions' SaveLang
+// so that concurrent toggles (e.g. two quick ctrl+g presses) cannot race and
+// clobber each other's write to config.json.
+var saveLangMu sync.Mutex
+
 // DefaultActions wires the screens to the real OS.
 func DefaultActions() Actions {
 	return Actions{
 		Root: library.Root, Open: platform.Open, Reveal: platform.Reveal, Copy: clipboard.WriteAll,
 		Exists:       func(p string) bool { _, err := os.Stat(p); return err == nil },
 		ChooseFolder: platform.ChooseFolder,
+		Getenv:       os.Getenv,
+		SaveLang: func(i18n.Lang) error {
+			saveLangMu.Lock()
+			defer saveLangMu.Unlock()
+			c, err := config.Load()
+			if err != nil {
+				return err
+			}
+			// Write the current language, not the argument: if two toggles
+			// race, the last one to set i18n.Current() must win, whichever
+			// of the two SaveLang calls happens to acquire the lock last.
+			c.Lang = string(i18n.Current())
+			return config.Save(c)
+		},
 	}
 }
 

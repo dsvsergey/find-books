@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"findbooks/internal/i18n"
 	"findbooks/internal/index"
 	"findbooks/internal/scan"
 )
@@ -109,5 +110,19 @@ func TestScanOffline(t *testing.T) {
 	_, err = Scan(context.Background(), st, lib, nil)
 	if !errors.Is(err, ErrOffline) || !strings.Contains(err.Error(), "Старий диск") {
 		t.Fatalf("err = %v, want ErrOffline naming the disk", err)
+	}
+}
+
+func TestScanOfflineEnglish(t *testing.T) {
+	i18n.Set(i18n.EN)
+	t.Cleanup(func() { i18n.Set(i18n.UK) })
+	st := newStore(t)
+	lib, err := st.AddLibrary("Old", "00000000-0000-0000-0000-00000000BEEF", "Old disk", "books")
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = Scan(context.Background(), st, lib, nil)
+	if !errors.Is(err, ErrOffline) || err.Error() != "the library's disk is not mounted: «Old disk»" {
+		t.Fatalf("err = %v", err)
 	}
 }

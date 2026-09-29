@@ -10,6 +10,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
+	"findbooks/internal/i18n"
 	"findbooks/internal/index"
 	"findbooks/internal/scan"
 )
@@ -41,6 +42,7 @@ type recorder struct {
 	online                   bool
 	missing                  bool // files do not exist on the (fake) disk
 	opened, revealed, copied []string
+	saved                    []i18n.Lang
 }
 
 func (r *recorder) actions() Actions {
@@ -56,6 +58,7 @@ func (r *recorder) actions() Actions {
 		Copy:         func(p string) error { r.copied = append(r.copied, p); return nil },
 		Exists:       func(string) bool { return !r.missing },
 		ChooseFolder: func(string) (string, error) { return "", errors.New("not used") },
+		SaveLang:     func(l i18n.Lang) error { r.saved = append(r.saved, l); return nil },
 	}
 }
 

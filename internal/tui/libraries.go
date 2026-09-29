@@ -9,13 +9,12 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
+	"findbooks/internal/i18n"
 	"findbooks/internal/index"
 	"findbooks/internal/libman"
 	"findbooks/internal/platform"
 	"findbooks/internal/scan"
 )
-
-const choosePrompt = "Виберіть теку бібліотеки"
 
 // quitTimeoutMsg fires after ctrl+c during a job if the job has not
 // finished stopping in time; it forces the quit rather than hanging forever.
@@ -96,8 +95,9 @@ func (m Model) loadLibraries() tea.Cmd {
 
 func (m Model) chooseFolder() tea.Cmd {
 	choose := m.act.ChooseFolder
+	prompt := i18n.T(i18n.KeyChoosePrompt)
 	return func() tea.Msg {
-		p, err := choose(choosePrompt)
+		p, err := choose(prompt)
 		return folderMsg{path: p, err: err}
 	}
 }
@@ -153,7 +153,7 @@ func (m Model) updateLibraries(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case librariesMsg:
 		if msg.err != nil {
-			m.status = "Помилка: " + msg.err.Error()
+			m.status = i18n.T(i18n.KeyErrorStatus, msg.err.Error())
 			return m, nil
 		}
 		m.libs, m.libOnline, m.total = msg.libs, msg.online, msg.total
@@ -181,10 +181,10 @@ func (m Model) updateLibraries(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.status = ""
 			return m, nil
 		case errors.Is(msg.err, platform.ErrUnsupported):
-			m.status = "Діалог вибору теки недоступний — використайте: findbooks add <шлях>"
+			m.status = i18n.T(i18n.KeyDialogUnsupported)
 			return m, nil
 		case msg.err != nil:
-			m.status = "Помилка: " + msg.err.Error()
+			m.status = i18n.T(i18n.KeyErrorStatus, msg.err.Error())
 			return m, nil
 		}
 		dir, name, b := msg.path, filepath.Base(msg.path), m.b
@@ -221,9 +221,9 @@ func (m Model) updateLibraries(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// See the jobDoneMsg case above: IDs get reused after a delete.
 		m.toc = map[int64][]string{}
 		if msg.err != nil {
-			m.status = "Помилка: " + msg.err.Error()
+			m.status = i18n.T(i18n.KeyErrorStatus, msg.err.Error())
 		} else {
-			m.status = fmt.Sprintf("Бібліотеку «%s» прибрано з індексу", msg.name)
+			m.status = i18n.T(i18n.KeyRemoved, msg.name)
 		}
 		return m, m.loadLibraries()
 	}
@@ -239,7 +239,7 @@ func (m Model) libraryKey(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		if m.job != nil {
 			m.job.cancel()
 			m.quitting = true
-			m.status = "Зупиняю індексацію…"
+			m.status = i18n.T(i18n.KeyStopping)
 			return m, tea.Tick(quitTimeout, func(time.Time) tea.Msg { return quitTimeoutMsg{} })
 		}
 		return m, tea.Quit
@@ -257,7 +257,7 @@ func (m Model) libraryKey(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	if m.job != nil {
 		if key == "esc" {
 			m.job.cancel()
-			m.status = "Скасовую…"
+			m.status = i18n.T(i18n.KeyCanceling)
 		}
 		return m, nil
 	}
@@ -265,11 +265,14 @@ func (m Model) libraryKey(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		m.confirmDelete = false
 		if l := m.selectedLib(); key == "y" && l != nil {
 			m.removing = true
-			m.status = fmt.Sprintf("Прибираю «%s»…", l.Name)
+			m.status = i18n.T(i18n.KeyRemoving, l.Name)
 			return m, m.removeLibrary(l.Name)
 		}
-		m.status = "Скасовано"
+		m.status = i18n.T(i18n.KeyCanceled)
 		return m, nil
+	}
+	if key == "ctrl+g" {
+		return m, m.toggleLang()
 	}
 	switch key {
 	case "esc":
@@ -287,7 +290,7 @@ func (m Model) libraryKey(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	case "down":
 		m.libCursor = max(0, min(len(m.libs)-1, m.libCursor+1))
 	case "a":
-		m.status = "Виберіть теку у вікні Finder… (Cancel — скасувати)"
+		m.status = i18n.T(i18n.KeyChooseInFinder)
 		m.choosing = true
 		return m, m.chooseFolder()
 	case "u":
@@ -316,21 +319,20 @@ func jobStatus(d jobDoneMsg) string {
 		}
 		return fmt.Sprintf("«%s»: %s", name, reportLine(d.rep))
 	case d.adding && d.lib.ID != 0:
-		return fmt.Sprintf("Бібліотеку «%s» зареєстровано, індексацію перервано — натисніть u, щоб продовжити", d.lib.Name)
+		return i18n.T(i18n.KeyAddInterruptedRegistered, d.lib.Name)
 	case d.adding && errors.Is(d.err, context.Canceled):
-		return fmt.Sprintf("Додавання «%s» перервано", d.name)
+		return i18n.T(i18n.KeyAddCanceled, d.name)
 	case errors.Is(d.err, index.ErrExists):
-		return fmt.Sprintf("Бібліотека з такою назвою або шляхом уже є («%s») — іншу назву можна задати: findbooks add --name <назва> <шлях>", d.name)
+		return i18n.T(i18n.KeyAddExists, d.name)
 	case errors.Is(d.err, libman.ErrOffline):
-		return fmt.Sprintf("Диск «%s» не підключено", d.lib.VolumeName)
+		return i18n.T(i18n.KeyDiskOffline, d.lib.VolumeName)
 	case errors.Is(d.err, context.Canceled):
-		return fmt.Sprintf("Оновлення «%s» перервано", d.name)
+		return i18n.T(i18n.KeyUpdateCanceled, d.name)
 	default:
-		return "Помилка: " + d.err.Error()
+		return i18n.T(i18n.KeyErrorStatus, d.err.Error())
 	}
 }
 
 func reportLine(r scan.Report) string {
-	return fmt.Sprintf("додано %d, оновлено %d, видалено %d, без змін %d; проблемних файлів: %d",
-		r.Added, r.Updated, r.Removed, r.Unchanged, len(r.Errors))
+	return i18n.T(i18n.KeyReportLine, r.Added, r.Updated, r.Removed, r.Unchanged, len(r.Errors))
 }

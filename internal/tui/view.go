@@ -1,13 +1,13 @@
 package tui
 
 import (
-	"fmt"
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
 
+	"findbooks/internal/i18n"
 	"findbooks/internal/index"
 )
 
@@ -17,12 +17,10 @@ var (
 	styleDim      = lipgloss.NewStyle().Foreground(lipgloss.Color("244"))
 	styleOnline   = lipgloss.NewStyle().Foreground(lipgloss.Color("42"))
 	styleOffline  = lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
-	styleLabel    = lipgloss.NewStyle().Foreground(lipgloss.Color("244")).Width(8)
+	styleLabel    = lipgloss.NewStyle().Foreground(lipgloss.Color("244")).Width(10)
 	styleStatus   = lipgloss.NewStyle().Foreground(lipgloss.Color("214"))
 	styleError    = lipgloss.NewStyle().Foreground(lipgloss.Color("196"))
 )
-
-const helpLine = "enter відкрити · ctrl+l бібліотеки · ctrl+o показати у Finder · ctrl+y копіювати шлях · tab за автором · ↑/↓ вибір · esc вихід"
 
 func (m Model) View() tea.View {
 	v := tea.NewView(m.render())
@@ -39,12 +37,12 @@ func (m Model) render() string {
 		w = 100
 	}
 	var b strings.Builder
-	b.WriteString(m.input.View() + "  " + styleDim.Render(fmt.Sprintf("%d з %d", len(m.hits), m.total)) + "\n\n")
+	b.WriteString(m.input.View() + "  " + styleDim.Render(i18n.T(i18n.KeyHitsCount, len(m.hits), m.total)) + "\n\n")
 	if m.err != nil {
-		b.WriteString(styleError.Render("Помилка пошуку: "+m.err.Error()) + "\n")
+		b.WriteString(styleError.Render(i18n.T(i18n.KeySearchError, m.err.Error())) + "\n")
 	}
 	if m.searched && len(m.hits) == 0 && strings.TrimSpace(m.input.Value()) != "" {
-		b.WriteString(styleDim.Render("Нічого не знайдено") + "\n")
+		b.WriteString(styleDim.Render(i18n.T(i18n.KeyNothingFound)) + "\n")
 	}
 	first, last := m.window()
 	for i := first; i < last; i++ {
@@ -57,7 +55,8 @@ func (m Model) render() string {
 	if m.status != "" {
 		b.WriteString("\n" + styleStatus.Render(m.status) + "\n")
 	}
-	b.WriteString("\n" + styleDim.Render(ansi.Truncate(helpLine, w, "…")))
+	help := i18n.T(i18n.KeyLangToggle) + " · " + i18n.T(i18n.KeySearchHelp)
+	b.WriteString("\n" + styleDim.Render(ansi.Truncate(help, w, "…")))
 	return b.String()
 }
 
@@ -91,9 +90,9 @@ func (m Model) renderHit(i, w int) string {
 	if i == m.cursor {
 		marker, style = "▸ ", styleSelected
 	}
-	where := "    файл: " + h.RelPath
+	where := i18n.T(i18n.KeyWhereFile, h.RelPath)
 	if h.IsCollection {
-		where = "    в: " + h.BookTitle
+		where = i18n.T(i18n.KeyWhereIn, h.BookTitle)
 	}
 	volume := "[" + h.VolumeName + " "
 	room := max(10, w-lipgloss.Width(volume)-4)
@@ -106,13 +105,17 @@ func (m Model) renderDetails(h index.Hit, w int) string {
 	if h.BookYear != "" {
 		book += " (" + h.BookYear + ")"
 	}
-	rows := [][2]string{{"Книга:", book}, {"Шлях:", h.TreePath}, {"Файл:", h.LibraryName + ": " + h.RelPath}}
+	rows := [][2]string{
+		{i18n.T(i18n.KeyLabelBook), book},
+		{i18n.T(i18n.KeyLabelPath), h.TreePath},
+		{i18n.T(i18n.KeyLabelFile), h.LibraryName + ": " + h.RelPath},
+	}
 	if toc := m.toc[h.BookID]; len(toc) > 1 {
-		rows = append(rows, [2]string{"Зміст:", strings.Join(toc, " · ")})
+		rows = append(rows, [2]string{i18n.T(i18n.KeyLabelContents), strings.Join(toc, " · ")})
 	}
 	var b strings.Builder
 	for _, r := range rows {
-		b.WriteString(styleLabel.Render(r[0]) + ansi.Truncate(r[1], max(10, w-9), "…") + "\n")
+		b.WriteString(styleLabel.Render(r[0]) + ansi.Truncate(r[1], max(10, w-11), "…") + "\n")
 	}
 	return b.String()
 }

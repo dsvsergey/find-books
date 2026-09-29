@@ -1,11 +1,11 @@
 package cli
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/spf13/cobra"
 
+	"findbooks/internal/i18n"
 	"findbooks/internal/index"
 	"findbooks/internal/library"
 )
@@ -13,12 +13,12 @@ import (
 func newUpdateCmd(a *app) *cobra.Command {
 	var all bool
 	cmd := &cobra.Command{
-		Use:   "update [назва]",
-		Short: "Переіндексувати змінені файли (лише на підключених дисках)",
+		Use:   i18n.T(i18n.KeyCmdUpdateUse),
+		Short: i18n.T(i18n.KeyCmdUpdateShort),
 		Args:  maxArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			if all == (len(args) == 1) {
-				return errors.New("вкажіть назву бібліотеки або --all")
+				return i18n.Errorf(nil, i18n.KeyNeedNameOrAll)
 			}
 			st, err := a.openStore()
 			if err != nil {
@@ -37,12 +37,12 @@ func newUpdateCmd(a *app) *cobra.Command {
 				return err
 			}
 			if len(libs) == 0 {
-				return errNoLibraries
+				return noLibraries()
 			}
 			for _, lib := range libs {
 				root, ok := library.Root(lib.VolumeID, lib.RootRel)
 				if !ok {
-					fmt.Fprintf(cmd.ErrOrStderr(), "⚠ «%s»: диск «%s» не підключено — пропускаю\n", lib.Name, lib.VolumeName)
+					fmt.Fprint(cmd.ErrOrStderr(), i18n.T(i18n.KeySkipOffline, lib.Name, lib.VolumeName)+"\n")
 					continue
 				}
 				if err := runScan(cmd, st, lib, root); err != nil {
@@ -52,6 +52,6 @@ func newUpdateCmd(a *app) *cobra.Command {
 			return nil
 		},
 	}
-	cmd.Flags().BoolVar(&all, "all", false, "оновити всі підключені бібліотеки")
+	cmd.Flags().BoolVar(&all, "all", false, i18n.T(i18n.KeyFlagAll))
 	return cmd
 }
