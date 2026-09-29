@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS libraries (
 	volume_name  TEXT NOT NULL,
 	root_rel     TEXT NOT NULL,
 	last_scan_at INTEGER NOT NULL DEFAULT 0,
+	extract_version INTEGER NOT NULL DEFAULT 0,
 	UNIQUE (volume_id, root_rel)
 );
 CREATE TABLE IF NOT EXISTS books (

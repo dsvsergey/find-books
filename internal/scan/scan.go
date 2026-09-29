@@ -82,7 +82,13 @@ func Run(ctx context.Context, st *index.Store, libraryID int64, root string, onP
 	if err != nil {
 		return rep, err
 	}
-	jobs, seen, failed, err := collect(ctx, root, stored, &rep)
+	ver, err := st.ExtractVersion(libraryID)
+	if err != nil {
+		return rep, err
+	}
+	// Indexed with another works heuristic: re-parse everything.
+	force := ver != extract.Version
+	jobs, seen, failed, err := collect(ctx, root, stored, force, &rep)
 	if err != nil {
 		return rep, err
 	}
@@ -137,6 +143,9 @@ func Run(ctx context.Context, st *index.Store, libraryID int64, root string, onP
 	if err := flush(); err != nil {
 		return rep, err
 	}
+	if err := st.SetExtractVersion(libraryID, extract.Version); err != nil {
+		return rep, err
+	}
 	return rep, st.MarkScanned(libraryID, time.Now())
 }
 
@@ -172,8 +181,9 @@ func underAny(rel string, prefixes []string) bool {
 }
 
 // collect walks root and returns the files to parse, the set of book paths
-// seen, and the rel paths of directories that could not be read.
-func collect(ctx context.Context, root string, stored map[string]index.FileStamp, rep *Report) ([]job, map[string]bool, []string, error) {
+// seen, and the rel paths of directories that could not be read. With force,
+// every book is parsed regardless of its stored size and mtime.
+func collect(ctx context.Context, root string, stored map[string]index.FileStamp, force bool, rep *Report) ([]job, map[string]bool, []string, error) {
 	var jobs []job
 	var failed []string
 	seen := map[string]bool{}
@@ -215,7 +225,7 @@ func collect(ctx context.Context, root string, stored map[string]index.FileStamp
 		seen[rel] = true
 		old, existed := stored[rel]
 		size, mtime := info.Size(), info.ModTime().Unix()
-		if existed && old.Size == size && old.MTime == mtime {
+		if !force && existed && old.Size == size && old.MTime == mtime {
 			rep.Unchanged++
 			return nil
 		}

@@ -1,8 +1,10 @@
 package index
 
 import (
+	"database/sql"
 	"errors"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 )
@@ -146,5 +148,83 @@ func TestDeleteAndRemoveLibrary(t *testing.T) {
 	}
 	if err := st.RemoveLibrary("A"); !errors.Is(err, ErrNotFound) {
 		t.Fatalf("err = %v, want ErrNotFound", err)
+	}
+}
+
+func TestOpenSetsSchemaVersion(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "index.db")
+	st, err := Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var v int
+	if err := st.db.QueryRow(`PRAGMA user_version`).Scan(&v); err != nil {
+		t.Fatal(err)
+	}
+	st.Close()
+	if v != 1 {
+		t.Fatalf("user_version = %d, want 1", v)
+	}
+	// Reopening a current-version index works.
+	st, err = Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	st.Close()
+}
+
+func TestOpenRejectsOtherSchemaVersion(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "index.db")
+	db, err := sql.Open("sqlite", path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.Exec(`PRAGMA user_version = 7`); err != nil {
+		t.Fatal(err)
+	}
+	db.Close()
+	st, err := Open(path)
+	if err == nil {
+		st.Close()
+		t.Fatal("expected an error for schema version 7")
+	}
+	want := "індекс створено іншою версією findbooks (схема 7) — видаліть " + path + " і додайте бібліотеки знову"
+	if err.Error() != want {
+		t.Fatalf("err = %q, want %q", err, want)
+	}
+}
+
+func TestExtractVersion(t *testing.T) {
+	st := newStore(t)
+	lib := addLib(t, st, "A")
+	if v, err := st.ExtractVersion(lib.ID); err != nil || v != 0 {
+		t.Fatalf("ExtractVersion = %d, %v; want 0", v, err)
+	}
+	if err := st.SetExtractVersion(lib.ID, 2); err != nil {
+		t.Fatal(err)
+	}
+	if v, err := st.ExtractVersion(lib.ID); err != nil || v != 2 {
+		t.Fatalf("ExtractVersion = %d, %v; want 2", v, err)
+	}
+	if _, err := st.ExtractVersion(999); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("unknown library: err = %v, want ErrNotFound", err)
+	}
+}
+
+func TestOpenRejectsUnversionedExistingIndex(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "index.db")
+	db, err := sql.Open("sqlite", path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.Exec(`CREATE TABLE libraries (id INTEGER PRIMARY KEY)`); err != nil {
+		t.Fatal(err)
+	}
+	db.Close()
+	if st, err := Open(path); err == nil {
+		st.Close()
+		t.Fatal("expected an error for a pre-versioning index")
+	} else if !strings.Contains(err.Error(), "(схема 0)") {
+		t.Fatalf("err = %v", err)
 	}
 }

@@ -34,11 +34,43 @@ func Open(path string) (*Store, error) {
 		return nil, err
 	}
 	db.SetMaxOpenConns(1)
-	if _, err := db.Exec(schema); err != nil {
+	if err := initSchema(db, path); err != nil {
 		db.Close()
-		return nil, fmt.Errorf("index %s: %w", path, err)
+		return nil, err
 	}
 	return &Store{db: db}, nil
+}
+
+// schemaVersion is stored in PRAGMA user_version. There are no migrations:
+// an index of another version has to be deleted and rebuilt.
+const schemaVersion = 1
+
+func initSchema(db *sql.DB, path string) error {
+	var v int
+	if err := db.QueryRow(`PRAGMA user_version`).Scan(&v); err != nil {
+		return fmt.Errorf("index %s: %w", path, err)
+	}
+	if v == 0 {
+		// user_version 0 is a fresh file — unless it already has tables,
+		// i.e. it was made by a findbooks that did not set the version.
+		var n int
+		if err := db.QueryRow(`SELECT count(*) FROM sqlite_master WHERE name = 'libraries'`).Scan(&n); err != nil {
+			return fmt.Errorf("index %s: %w", path, err)
+		}
+		if n > 0 {
+			return versionError(v, path)
+		}
+	} else if v != schemaVersion {
+		return versionError(v, path)
+	}
+	if _, err := db.Exec(schema + fmt.Sprintf("PRAGMA user_version = %d;", schemaVersion)); err != nil {
+		return fmt.Errorf("index %s: %w", path, err)
+	}
+	return nil
+}
+
+func versionError(v int, path string) error {
+	return fmt.Errorf("індекс створено іншою версією findbooks (схема %d) — видаліть %s і додайте бібліотеки знову", v, path)
 }
 
 func (s *Store) Close() error { return s.db.Close() }
@@ -114,5 +146,21 @@ func (s *Store) RemoveLibrary(name string) error {
 
 func (s *Store) MarkScanned(libraryID int64, t time.Time) error {
 	_, err := s.db.Exec(`UPDATE libraries SET last_scan_at = ? WHERE id = ?`, t.Unix(), libraryID)
+	return err
+}
+
+// ExtractVersion returns the extract.Version the library was last fully
+// indexed with (0 if never).
+func (s *Store) ExtractVersion(libraryID int64) (int, error) {
+	var v int
+	err := s.db.QueryRow(`SELECT extract_version FROM libraries WHERE id = ?`, libraryID).Scan(&v)
+	if errors.Is(err, sql.ErrNoRows) {
+		return 0, fmt.Errorf("%w: id %d", ErrNotFound, libraryID)
+	}
+	return v, err
+}
+
+func (s *Store) SetExtractVersion(libraryID int64, v int) error {
+	_, err := s.db.Exec(`UPDATE libraries SET extract_version = ? WHERE id = ?`, v, libraryID)
 	return err
 }

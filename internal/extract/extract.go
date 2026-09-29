@@ -11,6 +11,10 @@ import (
 	"findbooks/internal/textnorm"
 )
 
+// Version identifies the heuristic below. Bump it whenever Works changes its
+// output, so the scanner re-parses every file of already indexed libraries.
+const Version = 2
+
 type Work struct{ Title, Author, TreePath string }
 
 const treeSep = " › "

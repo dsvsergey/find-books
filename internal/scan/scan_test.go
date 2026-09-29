@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"findbooks/internal/extract"
 	"findbooks/internal/index"
 )
 
@@ -303,5 +304,36 @@ func TestRunRootVanishedDeletesNothing(t *testing.T) {
 	}
 	if h := hits(t, st, "человек амфибия"); len(h) != 1 {
 		t.Fatalf("book deleted: %+v", h)
+	}
+}
+
+func TestRunReparsesAllOnExtractVersionChange(t *testing.T) {
+	st, lib, root := setup(t)
+	// broken.fb2 is retried on every run; drop it so "unchanged" is exact.
+	if err := os.Remove(filepath.Join(root, "broken.fb2")); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Run(context.Background(), st, lib.ID, root, nil); err != nil {
+		t.Fatal(err)
+	}
+	if v, err := st.ExtractVersion(lib.ID); err != nil || v != extract.Version {
+		t.Fatalf("ExtractVersion after run = %d, %v; want %d", v, err, extract.Version)
+	}
+	if err := st.SetExtractVersion(lib.ID, 0); err != nil {
+		t.Fatal(err)
+	}
+	rep, err := Run(context.Background(), st, lib.ID, root, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if rep.Updated != 4 || rep.Unchanged != 0 || rep.Added != 0 || rep.Removed != 0 {
+		t.Fatalf("after version change: report = %+v", rep)
+	}
+	rep, err = Run(context.Background(), st, lib.ID, root, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if rep.Unchanged != 4 || rep.Updated != 0 || rep.Added != 0 || rep.Removed != 0 {
+		t.Fatalf("following run: report = %+v", rep)
 	}
 }
