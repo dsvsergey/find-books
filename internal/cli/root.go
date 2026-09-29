@@ -13,6 +13,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"findbooks/internal/config"
 	"findbooks/internal/i18n"
 	"findbooks/internal/index"
 	"findbooks/internal/platform"
@@ -117,15 +118,33 @@ func NewRootCmd() *cobra.Command {
 
 // Execute runs the CLI and returns the process exit code.
 func Execute() int {
-	lang, err := resolveLang(os.Args[1:], os.Getenv, configLang)
+	return execute(os.Args[1:], os.Getenv, os.Stderr)
+}
+
+// execute is Execute's testable body: args, environment lookup and the
+// stream error diagnostics go to are all injected.
+func execute(args []string, getenv func(string) string, stderr io.Writer) int {
+	lang, source, err := resolveLang(args, getenv, configLang)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
+		fmt.Fprintln(stderr, err)
+		switch source {
+		case sourceEnv:
+			fmt.Fprintln(stderr, "(from FINDBOOKS_LANG)")
+		case sourceConfig:
+			p, perr := config.Path()
+			if perr == nil {
+				fmt.Fprintf(stderr, "(from %s; fix with: findbooks --lang en config lang en)\n", p)
+			}
+		}
 		return 2
 	}
 	i18n.Set(lang)
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()
-	return exitCode(NewRootCmd().ExecuteContext(ctx), os.Stderr)
+	root := NewRootCmd()
+	root.SetArgs(args)
+	root.SetErr(stderr)
+	return exitCode(root.ExecuteContext(ctx), stderr)
 }
 
 // exitCode prints err to stderr and returns the process exit code:
