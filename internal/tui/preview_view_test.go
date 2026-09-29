@@ -23,6 +23,18 @@ func TestWrapCutsLongWord(t *testing.T) {
 	}
 }
 
+// TestWrapLongMultiWordStringStaysWithinLimit guards the incremental-width
+// change to wrap: no line may exceed the limit even when many words in a
+// row keep extending the current line.
+func TestWrapLongMultiWordStringStaysWithinLimit(t *testing.T) {
+	long := strings.Repeat("слово ", 500)
+	for _, l := range wrap(long, 30, 30) {
+		if w := ansi.StringWidth(l); w > 30 {
+			t.Fatalf("line wider than limit 30: %d %q", w, l)
+		}
+	}
+}
+
 func TestRenderBlocksWrapsToWidth(t *testing.T) {
 	long := strings.Repeat("слово ", 40)
 	lines := strings.Split(ansi.Strip(renderBlocks([]fb2.Block{{Kind: fb2.BlockPara, Text: long}}, 40)), "\n")

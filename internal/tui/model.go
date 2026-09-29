@@ -117,6 +117,7 @@ type Model struct {
 	pvHit     index.Hit
 	pvPath    string
 	pvView    viewport.Model
+	pvWidth   int  // the text width pvView's content was last rendered for
 	pvSeq     int  // only the previewMsg with this seq is applied
 	pvLoading bool // a preview load for pvSeq is in flight
 

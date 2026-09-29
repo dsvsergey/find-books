@@ -13,19 +13,35 @@ import (
 )
 
 type previewMsg struct {
-	seq  int
-	path string
-	hit  index.Hit
-	doc  preview.Doc
-	err  error
+	seq   int
+	path  string
+	hit   index.Hit
+	doc   preview.Doc
+	text  string // blocks already rendered off the UI goroutine, for width
+	width int    // the text width text was rendered for
+	err   error
 }
 
 // previewChrome counts the screen lines around the text: two header lines,
 // two separators and the help line.
 const previewChrome = 5
 
+// previewTextWidth computes the wrapped text column width for a window of
+// width w (0 meaning not yet known), floored so narrow windows still fit
+// readable text. It is the one formula shared by the load command, which
+// renders off the UI goroutine at ctrl+r time, and layoutPreview, so a
+// render started before a resize stays comparable to the current width.
+func previewTextWidth(w int) int {
+	if w <= 0 {
+		w = 100
+	}
+	return max(20, min(w-4, previewMaxWidth))
+}
+
 // openPreview starts loading the selected work; it sets a status and
-// returns nil when the preview cannot be shown.
+// returns nil when the preview cannot be shown. The load command renders
+// the text off the UI goroutine (renderBlocks on a large book is too slow
+// to run inline in Update) at the width the window has right now.
 func (m *Model) openPreview() tea.Cmd {
 	h := m.selected()
 	if h == nil {
@@ -43,9 +59,11 @@ func (m *Model) openPreview() tea.Cmd {
 	m.pvLoading = true
 	m.status = i18n.T(i18n.KeyPreviewLoading)
 	seq, hit, load := m.pvSeq, *h, m.act.Preview
+	width := previewTextWidth(m.width)
 	return func() tea.Msg {
 		doc, err := load(p, hit)
-		return previewMsg{seq: seq, path: p, hit: hit, doc: doc, err: err}
+		text := renderBlocks(doc.Blocks, width)
+		return previewMsg{seq: seq, path: p, hit: hit, doc: doc, text: text, width: width, err: err}
 	}
 }
 
@@ -66,20 +84,27 @@ func (m Model) previewLoaded(msg previewMsg) Model {
 	m.screen = screenPreview
 	m.pv, m.pvHit, m.pvPath = msg.doc, msg.hit, msg.path
 	m.pvView = viewport.New()
+	if previewTextWidth(m.width) == msg.width {
+		// the window did not resize while loading: use the text rendered
+		// off the UI goroutine as-is, no need to re-render it here.
+		m.pvWidth = msg.width
+		m.pvView.SetContent(msg.text)
+	} else {
+		m.pvWidth = -1 // force layoutPreview below to re-wrap for the current width
+	}
 	m.layoutPreview()
 	return m
 }
 
-// layoutPreview sizes the text to the window and re-wraps it, keeping the
-// scroll position.
+// layoutPreview sizes the viewport to the window and, only when the
+// computed text width actually changed, re-wraps the text (a height-only
+// resize just resizes the viewport, which is cheap). It keeps the scroll
+// position either way.
 func (m *Model) layoutPreview() {
 	if m.screen != screenPreview {
 		return
 	}
-	w, h := m.width, m.height
-	if w <= 0 {
-		w = 100
-	}
+	h := m.height
 	if h <= 0 {
 		h = 30
 	}
@@ -87,11 +112,14 @@ func (m *Model) layoutPreview() {
 	if m.pv.Stale {
 		chrome++
 	}
-	textW := min(w-4, previewMaxWidth)
+	textW := previewTextWidth(m.width)
 	off := m.pvView.YOffset()
 	m.pvView.SetWidth(textW)
 	m.pvView.SetHeight(max(3, h-chrome))
-	m.pvView.SetContent(renderBlocks(m.pv.Blocks, textW))
+	if textW != m.pvWidth {
+		m.pvWidth = textW
+		m.pvView.SetContent(renderBlocks(m.pv.Blocks, textW))
+	}
 	m.pvView.SetYOffset(off)
 }
 
@@ -122,7 +150,10 @@ func (m Model) previewKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		m.runOn(m.act.Copy, m.pvPath, i18n.T(i18n.KeyPathCopied))
 	case "ctrl+g":
 		cmd := m.toggleLang()
-		m.layoutPreview() // the illustration label is part of the content
+		// The illustration label is part of the content, so force a
+		// re-wrap below even though the width did not change.
+		m.pvWidth = -1
+		m.layoutPreview()
 		return m, cmd
 	}
 	return m, nil

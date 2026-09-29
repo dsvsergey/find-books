@@ -169,6 +169,38 @@ func TestPreviewScrollAndResize(t *testing.T) {
 	}
 }
 
+// TestPreviewRewrapsOnlyOnWidthChange guards the perf fix: a width change
+// must re-wrap the text (more, narrower lines), while a height-only resize
+// must leave the rendered content untouched.
+func TestPreviewRewrapsOnlyOnWidthChange(t *testing.T) {
+	tm, _, rec := searched(t, true, "чужие дети")
+	tm, _ = tm.Update(tea.WindowSizeMsg{Width: 120, Height: 20})
+	long := strings.Repeat("слово ", 400)
+	rec.doc = preview.Doc{Title: "T", Blocks: []fb2.Block{{Kind: fb2.BlockPara, Text: long}}}
+	tm, cmd := key(tm, ctrlR)
+	tm, _ = tm.Update(cmd())
+	wide := tm.(Model).pvView.TotalLineCount()
+	wideContent := tm.(Model).pvView.GetContent()
+
+	tm, _ = tm.Update(tea.WindowSizeMsg{Width: 40, Height: 20})
+	narrow := tm.(Model).pvView.TotalLineCount()
+	if narrow <= wide {
+		t.Fatalf("narrow lines = %d, want more than wide lines = %d", narrow, wide)
+	}
+	narrowContent := tm.(Model).pvView.GetContent()
+	if narrowContent == wideContent {
+		t.Fatal("content unchanged after a width change")
+	}
+
+	tm, _ = tm.Update(tea.WindowSizeMsg{Width: 40, Height: 30})
+	if got := tm.(Model).pvView.TotalLineCount(); got != narrow {
+		t.Fatalf("height-only resize changed line count: got %d, want %d", got, narrow)
+	}
+	if got := tm.(Model).pvView.GetContent(); got != narrowContent {
+		t.Fatal("height-only resize changed the rendered content")
+	}
+}
+
 func TestPreviewActions(t *testing.T) {
 	tm, rec := opened(t, storyDoc(3))
 	tm, _ = key(tm, tea.KeyPressMsg{Code: tea.KeyEnter})

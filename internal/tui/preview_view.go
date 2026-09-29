@@ -20,16 +20,20 @@ const blockIndent = "    "
 var styleItalic = lipgloss.NewStyle().Italic(true)
 
 // wrap splits text into lines: the first at most first cells wide, the
-// others at most rest; a word longer than its line is cut.
+// others at most rest; a word longer than its line is cut. curW tracks the
+// current line's width incrementally (each word's width is measured once)
+// instead of re-measuring cur on every word, which made this quadratic per
+// line for long paragraphs.
 func wrap(text string, first, rest int) []string {
 	var lines []string
-	limit, cur := first, ""
+	limit, cur, curW := first, "", 0
 	for _, w := range strings.Fields(text) {
-		if cur != "" && ansi.StringWidth(cur)+1+ansi.StringWidth(w) > limit {
+		ww := ansi.StringWidth(w)
+		if cur != "" && curW+1+ww > limit {
 			lines = append(lines, cur)
-			cur, limit = "", rest
+			cur, curW, limit = "", 0, rest
 		}
-		for cur == "" && ansi.StringWidth(w) > limit {
+		for cur == "" && ww > limit {
 			head := ansi.Truncate(w, limit, "")
 			if head == "" { // a wide rune does not fit: take it anyway
 				_, size := utf8.DecodeRuneInString(w)
@@ -37,14 +41,17 @@ func wrap(text string, first, rest int) []string {
 			}
 			lines = append(lines, head)
 			w, limit = w[len(head):], rest
+			ww = ansi.StringWidth(w)
 		}
 		if w == "" {
 			continue
 		}
 		if cur != "" {
 			cur += " "
+			curW++
 		}
 		cur += w
+		curW += ww
 	}
 	if cur != "" || len(lines) == 0 {
 		lines = append(lines, cur)
