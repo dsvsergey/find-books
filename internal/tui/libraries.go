@@ -1,0 +1,336 @@
+package tui
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"path/filepath"
+	"time"
+
+	tea "charm.land/bubbletea/v2"
+
+	"findbooks/internal/index"
+	"findbooks/internal/libman"
+	"findbooks/internal/platform"
+	"findbooks/internal/scan"
+)
+
+const choosePrompt = "Виберіть теку бібліотеки"
+
+// quitTimeoutMsg fires after ctrl+c during a job if the job has not
+// finished stopping in time; it forces the quit rather than hanging forever.
+type quitTimeoutMsg struct{}
+
+// quitTimeout is a var so tests can shrink it instead of waiting out the
+// real duration.
+var quitTimeout = 3 * time.Second
+
+type librariesMsg struct {
+	libs   []index.Library
+	online map[string]bool // volume id -> mounted
+	total  int
+	err    error
+}
+
+type folderMsg struct {
+	path string
+	err  error
+}
+
+// progressMsg and jobDoneMsg carry the *job that produced them so a stale
+// message from a superseded or already-finished job can be told apart from
+// one belonging to the currently running job.
+type progressMsg struct {
+	j *job
+	p scan.Progress
+}
+
+type jobDoneMsg struct {
+	j      *job
+	adding bool
+	name   string        // display name (folder name for a new library)
+	lib    index.Library // the library; ID 0 if an add failed before registering
+	rep    scan.Report
+	err    error
+}
+
+type removedMsg struct {
+	name string
+	err  error
+}
+
+// job is a running add or rescan. ch carries progressMsg values and one
+// final jobDoneMsg, then is closed.
+type job struct {
+	name     string
+	cancel   context.CancelFunc
+	ch       chan tea.Msg
+	progress scan.Progress
+}
+
+// keyAliases maps Ukrainian-layout keys to the Latin keys of the libraries screen.
+var keyAliases = map[string]string{
+	"ф": "a", "г": "u", "в": "d", "н": "y",
+	"Ф": "a", "Г": "u", "В": "d", "Н": "y", "Y": "y",
+	"A": "a", "U": "u", "D": "d",
+}
+
+func (m Model) loadLibraries() tea.Cmd {
+	b, root := m.b, m.act.Root
+	return func() tea.Msg {
+		libs, err := b.Libraries()
+		if err != nil {
+			return librariesMsg{err: err}
+		}
+		total, err := b.TotalWorks()
+		online := map[string]bool{}
+		for _, l := range libs {
+			if _, seen := online[l.VolumeID]; !seen {
+				_, ok := root(l.VolumeID, l.RootRel)
+				online[l.VolumeID] = ok
+			}
+		}
+		return librariesMsg{libs: libs, online: online, total: total, err: err}
+	}
+}
+
+func (m Model) chooseFolder() tea.Cmd {
+	choose := m.act.ChooseFolder
+	return func() tea.Msg {
+		p, err := choose(choosePrompt)
+		return folderMsg{path: p, err: err}
+	}
+}
+
+func (m Model) removeLibrary(name string) tea.Cmd {
+	b := m.b
+	return func() tea.Msg { return removedMsg{name: name, err: b.RemoveLibrary(name)} }
+}
+
+// startJob runs fn in the background. Progress is sent without blocking
+// (the bar only needs the latest value); the final message always arrives.
+// Every message it sends is tagged with the job's own *job so a message
+// belonging to a superseded job can be recognized and ignored.
+func (m *Model) startJob(name string, fn func(ctx context.Context, onProgress func(scan.Progress)) jobDoneMsg) tea.Cmd {
+	ctx, cancel := context.WithCancel(context.Background())
+	ch := make(chan tea.Msg, 16)
+	j := &job{name: name, cancel: cancel, ch: ch}
+	m.job = j
+	m.status = ""
+	go func() {
+		done := fn(ctx, func(p scan.Progress) {
+			select {
+			case ch <- progressMsg{j: j, p: p}:
+			default:
+			}
+		})
+		done.j = j
+		ch <- done
+		close(ch)
+	}()
+	return listen(ch)
+}
+
+// listen waits for the next message of a running job.
+func listen(ch <-chan tea.Msg) tea.Cmd {
+	return func() tea.Msg {
+		msg, ok := <-ch
+		if !ok {
+			return nil
+		}
+		return msg
+	}
+}
+
+func (m Model) selectedLib() *index.Library {
+	if m.libCursor < 0 || m.libCursor >= len(m.libs) {
+		return nil
+	}
+	return &m.libs[m.libCursor]
+}
+
+func (m Model) updateLibraries(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case librariesMsg:
+		if msg.err != nil {
+			m.status = "Помилка: " + msg.err.Error()
+			return m, nil
+		}
+		m.libs, m.libOnline, m.total = msg.libs, msg.online, msg.total
+		m.libCursor = min(m.libCursor, max(0, len(m.libs)-1))
+		if m.selectLibID != 0 {
+			for i, l := range m.libs {
+				if l.ID == m.selectLibID {
+					m.libCursor = i
+					break
+				}
+			}
+			m.selectLibID = 0
+		}
+		return m, nil
+	case folderMsg:
+		m.choosing = false
+		// A folder chosen while a job is already running, or after the user
+		// left the libraries screen, is stale — drop it without starting a
+		// second job or touching status.
+		if m.job != nil || m.screen != screenLibraries {
+			return m, nil
+		}
+		switch {
+		case errors.Is(msg.err, platform.ErrCanceled):
+			m.status = ""
+			return m, nil
+		case errors.Is(msg.err, platform.ErrUnsupported):
+			m.status = "Діалог вибору теки недоступний — використайте: findbooks add <шлях>"
+			return m, nil
+		case msg.err != nil:
+			m.status = "Помилка: " + msg.err.Error()
+			return m, nil
+		}
+		dir, name, b := msg.path, filepath.Base(msg.path), m.b
+		return m, m.startJob(name, func(ctx context.Context, on func(scan.Progress)) jobDoneMsg {
+			lib, rep, err := b.AddFolder(ctx, dir, on)
+			return jobDoneMsg{adding: true, name: name, lib: lib, rep: rep, err: err}
+		})
+	case progressMsg:
+		if m.job == nil || msg.j != m.job {
+			return m, nil
+		}
+		m.job.progress = msg.p
+		return m, listen(m.job.ch)
+	case jobDoneMsg:
+		if msg.j == nil || msg.j != m.job {
+			return m, nil
+		}
+		m.job.cancel()
+		m.job = nil
+		// The just-finished job may have added, rescanned or removed books;
+		// SQLite reuses a deleted book's ID, so a stale m.toc entry could
+		// show another book's contents.
+		m.toc = map[int64][]string{}
+		if m.quitting {
+			return m, tea.Quit
+		}
+		m.status = jobStatus(msg)
+		if msg.adding && msg.lib.ID != 0 && msg.err == nil {
+			m.selectLibID = msg.lib.ID
+		}
+		return m, m.loadLibraries()
+	case removedMsg:
+		m.removing = false
+		// See the jobDoneMsg case above: IDs get reused after a delete.
+		m.toc = map[int64][]string{}
+		if msg.err != nil {
+			m.status = "Помилка: " + msg.err.Error()
+		} else {
+			m.status = fmt.Sprintf("Бібліотеку «%s» прибрано з індексу", msg.name)
+		}
+		return m, m.loadLibraries()
+	}
+	return m, nil
+}
+
+func (m Model) libraryKey(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
+	key := k.String()
+	if alias, ok := keyAliases[key]; ok {
+		key = alias
+	}
+	if key == "ctrl+c" {
+		if m.job != nil {
+			m.job.cancel()
+			m.quitting = true
+			m.status = "Зупиняю індексацію…"
+			return m, tea.Tick(quitTimeout, func(time.Time) tea.Msg { return quitTimeoutMsg{} })
+		}
+		return m, tea.Quit
+	}
+	if m.choosing {
+		// The Finder dialog is pending (it runs outside our event loop);
+		// every other key is ignored until it resolves into a folderMsg.
+		return m, nil
+	}
+	if m.removing {
+		// A removeLibrary call is pending; every other key is ignored until
+		// it resolves into a removedMsg.
+		return m, nil
+	}
+	if m.job != nil {
+		if key == "esc" {
+			m.job.cancel()
+			m.status = "Скасовую…"
+		}
+		return m, nil
+	}
+	if m.confirmDelete {
+		m.confirmDelete = false
+		if l := m.selectedLib(); key == "y" && l != nil {
+			m.removing = true
+			m.status = fmt.Sprintf("Прибираю «%s»…", l.Name)
+			return m, m.removeLibrary(l.Name)
+		}
+		m.status = "Скасовано"
+		return m, nil
+	}
+	switch key {
+	case "esc":
+		if m.total == 0 {
+			return m, tea.Quit
+		}
+		m.screen = screenSearch
+		m.status = ""
+		if m.input.Value() != "" {
+			return m, m.queueSearch()
+		}
+		return m, nil
+	case "up":
+		m.libCursor = max(0, m.libCursor-1)
+	case "down":
+		m.libCursor = max(0, min(len(m.libs)-1, m.libCursor+1))
+	case "a":
+		m.status = "Виберіть теку у вікні Finder… (Cancel — скасувати)"
+		m.choosing = true
+		return m, m.chooseFolder()
+	case "u":
+		if l := m.selectedLib(); l != nil {
+			lib, b := *l, m.b
+			return m, m.startJob(lib.Name, func(ctx context.Context, on func(scan.Progress)) jobDoneMsg {
+				rep, err := b.Rescan(ctx, lib, on)
+				return jobDoneMsg{name: lib.Name, lib: lib, rep: rep, err: err}
+			})
+		}
+	case "d":
+		if m.selectedLib() != nil {
+			m.confirmDelete = true
+			m.status = ""
+		}
+	}
+	return m, nil
+}
+
+func jobStatus(d jobDoneMsg) string {
+	switch {
+	case d.err == nil:
+		name := d.lib.Name
+		if name == "" {
+			name = d.name
+		}
+		return fmt.Sprintf("«%s»: %s", name, reportLine(d.rep))
+	case d.adding && d.lib.ID != 0:
+		return fmt.Sprintf("Бібліотеку «%s» зареєстровано, індексацію перервано — натисніть u, щоб продовжити", d.lib.Name)
+	case d.adding && errors.Is(d.err, context.Canceled):
+		return fmt.Sprintf("Додавання «%s» перервано", d.name)
+	case errors.Is(d.err, index.ErrExists):
+		return fmt.Sprintf("Бібліотека з такою назвою або шляхом уже є («%s») — іншу назву можна задати: findbooks add --name <назва> <шлях>", d.name)
+	case errors.Is(d.err, libman.ErrOffline):
+		return fmt.Sprintf("Диск «%s» не підключено", d.lib.VolumeName)
+	case errors.Is(d.err, context.Canceled):
+		return fmt.Sprintf("Оновлення «%s» перервано", d.name)
+	default:
+		return "Помилка: " + d.err.Error()
+	}
+}
+
+func reportLine(r scan.Report) string {
+	return fmt.Sprintf("додано %d, оновлено %d, видалено %d, без змін %d; проблемних файлів: %d",
+		r.Added, r.Updated, r.Removed, r.Unchanged, len(r.Errors))
+}

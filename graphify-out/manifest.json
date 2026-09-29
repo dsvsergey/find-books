@@ -1,0 +1,302 @@
+{
+  "cmd/findbooks/main.go": {
+    "mtime": 1790671445.65826,
+    "ast_hash": "e3f2b914a5467b68afd48dc02f2bd0d5",
+    "semantic_hash": ""
+  },
+  "go.mod": {
+    "mtime": 1790671449.5433679,
+    "ast_hash": "fbff66c03418b6fac6a21da8b5916651",
+    "semantic_hash": ""
+  },
+  "internal/cli/add.go": {
+    "mtime": 1790689052.2644696,
+    "ast_hash": "b49373b3b11e07264e8c945de9a07597",
+    "semantic_hash": ""
+  },
+  "internal/cli/cli_test.go": {
+    "mtime": 1790690235.6095188,
+    "ast_hash": "68167738b04d94cadea1e488df1f3dd6",
+    "semantic_hash": ""
+  },
+  "internal/cli/list.go": {
+    "mtime": 1790672028.2695758,
+    "ast_hash": "55b6156c71cfe5278b9d475fcd10160a",
+    "semantic_hash": ""
+  },
+  "internal/cli/progress.go": {
+    "mtime": 1790671436.5913599,
+    "ast_hash": "7c2279a44f91779bedd492c0074648b7",
+    "semantic_hash": ""
+  },
+  "internal/cli/remove.go": {
+    "mtime": 1790672033.897076,
+    "ast_hash": "2dcaf7462fefcacd4ebcb8a4fa86d9b0",
+    "semantic_hash": ""
+  },
+  "internal/cli/root.go": {
+    "mtime": 1790690246.8459625,
+    "ast_hash": "cac8402c379bdb448f23ce726e15e3ae",
+    "semantic_hash": ""
+  },
+  "internal/cli/search.go": {
+    "mtime": 1790671441.7340753,
+    "ast_hash": "f464ef64624f85381eac371089bc69fa",
+    "semantic_hash": ""
+  },
+  "internal/cli/update.go": {
+    "mtime": 1790672014.9781387,
+    "ast_hash": "1517acdfb9b38a972738a78305cc2d22",
+    "semantic_hash": ""
+  },
+  "internal/extract/extract.go": {
+    "mtime": 1790674036.6583169,
+    "ast_hash": "587967108cd440817c45135104cec574",
+    "semantic_hash": ""
+  },
+  "internal/extract/extract_test.go": {
+    "mtime": 1790672805.8531585,
+    "ast_hash": "413a65026770fe71a674568ec3acf614",
+    "semantic_hash": ""
+  },
+  "internal/fb2/fb2.go": {
+    "mtime": 1790674216.5590463,
+    "ast_hash": "311f6fc331c3dd8608e4297f348858d5",
+    "semantic_hash": ""
+  },
+  "internal/fb2/fb2_test.go": {
+    "mtime": 1790674210.3652158,
+    "ast_hash": "529bd8c8fbf9ecd29845594bd6bf8f8e",
+    "semantic_hash": ""
+  },
+  "internal/fb2/file.go": {
+    "mtime": 1790668212.4640446,
+    "ast_hash": "da7abe3c8010de4743b8332021c46538",
+    "semantic_hash": ""
+  },
+  "internal/index/books.go": {
+    "mtime": 1790669420.8194664,
+    "ast_hash": "ecbb87a69729d46ce67c9df15a3e95cc",
+    "semantic_hash": ""
+  },
+  "internal/index/schema.go": {
+    "mtime": 1790674006.4377673,
+    "ast_hash": "224b13027f2ee526ff223a6d44e06213",
+    "semantic_hash": ""
+  },
+  "internal/index/search.go": {
+    "mtime": 1790669420.8197484,
+    "ast_hash": "9876ee7c1658160b1d127f4fb562ff21",
+    "semantic_hash": ""
+  },
+  "internal/index/search_test.go": {
+    "mtime": 1790669420.819633,
+    "ast_hash": "7fc54a467b1c9e81db28cede2130bc09",
+    "semantic_hash": ""
+  },
+  "internal/index/store.go": {
+    "mtime": 1790674022.2871587,
+    "ast_hash": "9808c534cdf5e6fc59d79707f1f9a2bd",
+    "semantic_hash": ""
+  },
+  "internal/index/store_test.go": {
+    "mtime": 1790674022.3265176,
+    "ast_hash": "d066e0f6324b271c909c6ab647c07779",
+    "semantic_hash": ""
+  },
+  "internal/library/library.go": {
+    "mtime": 1790669741.8774965,
+    "ast_hash": "f94116e5fe9de50d0cc3fd6bde52e321",
+    "semantic_hash": ""
+  },
+  "internal/library/library_test.go": {
+    "mtime": 1790669726.4551272,
+    "ast_hash": "96e894d54bab7d41a84de39f565c0393",
+    "semantic_hash": ""
+  },
+  "internal/platform/platform.go": {
+    "mtime": 1790688749.5552278,
+    "ast_hash": "a688844f8fa042ea510fec14a800ca79",
+    "semantic_hash": ""
+  },
+  "internal/platform/platform_darwin.go": {
+    "mtime": 1790691089.5900152,
+    "ast_hash": "a0076dda53a5879a84a82b19d7b96703",
+    "semantic_hash": ""
+  },
+  "internal/platform/platform_darwin_test.go": {
+    "mtime": 1790691204.1071782,
+    "ast_hash": "94cb5cc11d4bd8e96aa8d85706501aad",
+    "semantic_hash": ""
+  },
+  "internal/platform/platform_linux.go": {
+    "mtime": 1790688775.7734756,
+    "ast_hash": "5356b8ea44606237f01658064cf56702",
+    "semantic_hash": ""
+  },
+  "internal/platform/platform_test.go": {
+    "mtime": 1790667548.2505648,
+    "ast_hash": "879a7608bbc8ea7e622fc2725e8708b1",
+    "semantic_hash": ""
+  },
+  "internal/platform/platform_windows.go": {
+    "mtime": 1790688769.820956,
+    "ast_hash": "e39dcfc6c880c21b8048b3dcc3e5d51e",
+    "semantic_hash": ""
+  },
+  "internal/scan/scan.go": {
+    "mtime": 1790674198.6354427,
+    "ast_hash": "4c0a7231758d27535d926067bb38f0a3",
+    "semantic_hash": ""
+  },
+  "internal/scan/scan_test.go": {
+    "mtime": 1790674191.599278,
+    "ast_hash": "8cb0d3debd4eb635c3c3f1f33834f0c6",
+    "semantic_hash": ""
+  },
+  "internal/textnorm/textnorm.go": {
+    "mtime": 1790667906.553376,
+    "ast_hash": "2540881c2245957a9d2d9395a3f6a927",
+    "semantic_hash": ""
+  },
+  "internal/textnorm/textnorm_test.go": {
+    "mtime": 1790674268.610457,
+    "ast_hash": "3b92864affb735f0f36cb93a8d0686ac",
+    "semantic_hash": ""
+  },
+  "internal/tui/model.go": {
+    "mtime": 1790691009.593321,
+    "ast_hash": "20da26d18018f44b581bc1cd9c4019d2",
+    "semantic_hash": ""
+  },
+  "internal/tui/model_test.go": {
+    "mtime": 1790689357.3688092,
+    "ast_hash": "2759d3d12ab01c79b7a31dd51926801c",
+    "semantic_hash": ""
+  },
+  "internal/tui/rank.go": {
+    "mtime": 1790670663.1082778,
+    "ast_hash": "f4e400d94fd95a813eec290303412e25",
+    "semantic_hash": ""
+  },
+  "internal/tui/run.go": {
+    "mtime": 1790689466.9667273,
+    "ast_hash": "c4338eeaff485491926850849d02230b",
+    "semantic_hash": ""
+  },
+  "internal/tui/view.go": {
+    "mtime": 1790689459.274851,
+    "ast_hash": "39839b54d865dd78771219886ea69c84",
+    "semantic_hash": ""
+  },
+  "README.md": {
+    "mtime": 1790691095.0602098,
+    "ast_hash": "3c986cc640723dad4d60d679fd406392",
+    "semantic_hash": ""
+  },
+  "docs/superpowers/plans/2026-09-29-findbooks.md": {
+    "mtime": 1790667127.0138896,
+    "ast_hash": "3db1d6495a293e1ae735048ddb6cf620",
+    "semantic_hash": ""
+  },
+  "docs/superpowers/specs/2026-09-29-findbooks-design.md": {
+    "mtime": 1790665934.2741482,
+    "ast_hash": "ca674ce019634a71048fa83e006d3426",
+    "semantic_hash": ""
+  },
+  "internal/cli/main_test.go": {
+    "mtime": 1790673176.3845322,
+    "ast_hash": "5a0b8611050afe6a6032a11bc8749f95",
+    "semantic_hash": ""
+  },
+  "internal/library/main_test.go": {
+    "mtime": 1790673171.1208117,
+    "ast_hash": "ff08930150aae604f041cddeaee4152c",
+    "semantic_hash": ""
+  },
+  "internal/libman/libman.go": {
+    "mtime": 1790689030.944299,
+    "ast_hash": "483afe41a1d730b12f1325af95fba274",
+    "semantic_hash": ""
+  },
+  "internal/libman/libman_test.go": {
+    "mtime": 1790689017.82225,
+    "ast_hash": "7e96f56033d6184a97487a79e446b938",
+    "semantic_hash": ""
+  },
+  "internal/libman/main_test.go": {
+    "mtime": 1790689003.2066536,
+    "ast_hash": "85fe36e2f857a9616fc1944e3b7631ef",
+    "semantic_hash": ""
+  },
+  "internal/tui/libraries.go": {
+    "mtime": 1790691065.2771647,
+    "ast_hash": "c85af5bf239e848dd7ea01a6fb9bcb40",
+    "semantic_hash": ""
+  },
+  "internal/tui/libraries_test.go": {
+    "mtime": 1790691196.4261694,
+    "ast_hash": "d5255aa0159a7027661b7eb48a53f773",
+    "semantic_hash": ""
+  },
+  "internal/tui/libraries_view.go": {
+    "mtime": 1790691082.8920817,
+    "ast_hash": "7cfdb74b718db0db5e4e34756bd1b95f",
+    "semantic_hash": ""
+  },
+  ".superpowers/sdd/2026-09-29-libraries-screen/progress.md": {
+    "mtime": 1790690801.595401,
+    "ast_hash": "64049c7056cc5b4c854b35d73943a6ee",
+    "semantic_hash": ""
+  },
+  ".superpowers/sdd/2026-09-29-libraries-screen/task-1-brief.md": {
+    "mtime": 1790688690.864644,
+    "ast_hash": "affd38ef60265dce73fda74d2503c651",
+    "semantic_hash": ""
+  },
+  ".superpowers/sdd/2026-09-29-libraries-screen/task-1-report.md": {
+    "mtime": 1790688836.316165,
+    "ast_hash": "6f3f57f21736bad6ddee45978081cf6f",
+    "semantic_hash": ""
+  },
+  ".superpowers/sdd/2026-09-29-libraries-screen/task-2-brief.md": {
+    "mtime": 1790688970.0214128,
+    "ast_hash": "5cb490b2f8fd571968c69463c1a1ace2",
+    "semantic_hash": ""
+  },
+  ".superpowers/sdd/2026-09-29-libraries-screen/task-2-report.md": {
+    "mtime": 1790689113.9339998,
+    "ast_hash": "77bda3e8edfe6da788a42ed065502230",
+    "semantic_hash": ""
+  },
+  ".superpowers/sdd/2026-09-29-libraries-screen/task-3-brief.md": {
+    "mtime": 1790689275.2339756,
+    "ast_hash": "db0d8199aa7186ecc5134550533fdaa8",
+    "semantic_hash": ""
+  },
+  ".superpowers/sdd/2026-09-29-libraries-screen/task-3-report.md": {
+    "mtime": 1790690093.9475327,
+    "ast_hash": "2652b45e114cc5f77c0f8128a7f13eb7",
+    "semantic_hash": ""
+  },
+  ".superpowers/sdd/2026-09-29-libraries-screen/task-4-brief.md": {
+    "mtime": 1790690188.6814077,
+    "ast_hash": "39727e029999d40c60dc88485b14d0a8",
+    "semantic_hash": ""
+  },
+  ".superpowers/sdd/2026-09-29-libraries-screen/task-4-report.md": {
+    "mtime": 1790690363.6007812,
+    "ast_hash": "bfbc1cd0b19ca6dc1af94cb6f499f1b7",
+    "semantic_hash": ""
+  },
+  "docs/superpowers/plans/2026-09-29-libraries-screen.md": {
+    "mtime": 1790685851.3365948,
+    "ast_hash": "740c8f053105fe85864b402d0fa80a30",
+    "semantic_hash": ""
+  },
+  "docs/superpowers/specs/2026-09-29-findbooks-libraries-screen-design.md": {
+    "mtime": 1790684693.9312196,
+    "ast_hash": "287975b2a7fd9e54cb1ea649899745a6",
+    "semantic_hash": ""
+  }
+}

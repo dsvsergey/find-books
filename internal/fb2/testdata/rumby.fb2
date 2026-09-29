@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+ <description>
+  <title-info>
+   <genre>sf</genre>
+   <author><first-name> Евгений</first-name><middle-name>Валентинович</middle-name><last-name> Носов</last-name></author>
+   <author><first-name> Игорь</first-name><last-name> Пидоренко</last-name></author>
+   <author><first-name>Олег</first-name><middle-name>Игоревич</middle-name><last-name>Чарушников</last-name></author>
+   <book-title>Румбы фантастики. 1988 год. Том II</book-title>
+   <date value="1988-01-01">1988</date>
+   <lang>ru</lang>
+  </title-info>
+  <document-info>
+   <author><nickname>Tanja45</nickname></author>
+   <id>5F832003</id>
+  </document-info>
+ </description>
+ <body>
+  <title><p>Румбы фантастики. 1988 год. Том II</p></title>
+  <section>
+   <title><p>Евгений Носов</p></title>
+   <section>
+    <title><p>ЗЕМЛЕЙ РОЖДЕННЫЕ</p></title>
+    <p>Текст.</p>
+   </section>
+  </section>
+  <section>
+   <title><p>Игорь Пидоренко</p></title>
+   <section>
+    <title><p>ЧУЖИЕ ДЕТИ</p></title>
+    <section><title><p>1</p></title><p>Текст.</p></section>
+    <section><title><p>2</p></title><p>Текст.</p></section>
+   </section>
+  </section>
+  <section>
+   <title><p>Олег Чарушников</p></title>
+   <section>
+    <title><p>НА «ОЛИМПЕ» ВСЕ СПОКОЙНО</p></title>
+    <section><title><p>История первая</p><p>ТРУД СИЗИФА</p></title><p>Текст.</p></section>
+   </section>
+  </section>
+  <section>
+   <title><p>ОБ АВТОРАХ ЭТОГО СБОРНИКА</p></title>
+   <p>Текст.</p>
+  </section>
+ </body>
+ <body name="notes">
+  <title><p>Примечания</p></title>
+  <section id="n_1"><title><p>1</p></title><p>Сноска.</p></section>
+ </body>
+ <binary id="cover.jpg" content-type="image/jpeg">/9j/4AAQSkZJRgABAQ==</binary>
+</FictionBook>

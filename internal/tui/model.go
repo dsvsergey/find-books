@@ -1,0 +1,266 @@
+// Package tui is the interactive search screen and the libraries screen.
+package tui
+
+import (
+	"context"
+	"fmt"
+	"time"
+
+	"charm.land/bubbles/v2/progress"
+	"charm.land/bubbles/v2/textinput"
+	tea "charm.land/bubbletea/v2"
+
+	"findbooks/internal/index"
+	"findbooks/internal/library"
+	"findbooks/internal/scan"
+)
+
+type Searcher interface {
+	Search(q index.Query) ([]index.Hit, error)
+	BookWorks(bookID int64) ([]string, error)
+}
+
+// Backend is everything the screens need from the index.
+type Backend interface {
+	Searcher
+	Libraries() ([]index.Library, error)
+	TotalWorks() (int, error)
+	RemoveLibrary(name string) error
+	// AddFolder registers dir as a library and runs its first scan. A
+	// returned library with ID != 0 was registered even when err != nil.
+	AddFolder(ctx context.Context, dir string, onProgress func(scan.Progress)) (index.Library, scan.Report, error)
+	// Rescan updates a registered library.
+	Rescan(ctx context.Context, lib index.Library, onProgress func(scan.Progress)) (scan.Report, error)
+}
+
+// Actions are the side effects the screens trigger; tests replace them.
+type Actions struct {
+	Root         func(volumeID, rootRel string) (string, bool)
+	Open         func(path string) error
+	Reveal       func(path string) error
+	Copy         func(text string) error
+	Exists       func(path string) bool // does the file exist on the mounted disk
+	ChooseFolder func(prompt string) (string, error)
+}
+
+const (
+	debounce       = 50 * time.Millisecond
+	candidateLimit = 500
+)
+
+type screen int
+
+const (
+	screenSearch screen = iota
+	screenLibraries
+)
+
+type searchMsg struct{ seq int }
+
+type resultsMsg struct {
+	seq    int
+	hits   []index.Hit
+	online map[string]bool
+	err    error
+}
+
+type Model struct {
+	b      Backend
+	act    Actions
+	total  int
+	screen screen
+
+	// search screen
+	input    textinput.Model
+	hits     []index.Hit
+	cursor   int
+	seq      int
+	searched bool
+	online   map[string]bool    // volume id -> mounted
+	toc      map[int64][]string // book id -> work titles (cache)
+	err      error
+
+	// libraries screen
+	libs          []index.Library
+	libOnline     map[string]bool
+	libCursor     int
+	confirmDelete bool
+	choosing      bool  // waiting for the Finder folder dialog to resolve
+	removing      bool  // waiting for a removeLibrary to resolve
+	quitting      bool  // ctrl+c pressed during a job; quit once it stops
+	selectLibID   int64 // select this library the next time librariesMsg loads
+	job           *job
+	bar           progress.Model
+
+	status string
+	width  int
+	height int
+}
+
+// New builds the UI; with an empty index (total == 0) it opens on the
+// libraries screen.
+func New(b Backend, act Actions, total int) Model {
+	in := textinput.New()
+	in.Prompt = "🔎 "
+	in.Placeholder = "назва твору, автор або збірка…"
+	in.Focus()
+	m := Model{
+		b: b, act: act, total: total, input: in,
+		online: map[string]bool{}, toc: map[int64][]string{}, libOnline: map[string]bool{},
+		bar: progress.New(progress.WithDefaultBlend(), progress.WithWidth(40)),
+	}
+	if total == 0 {
+		m.screen = screenLibraries
+	}
+	return m
+}
+
+func (m Model) Init() tea.Cmd { return m.loadLibraries() }
+
+func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		m.width, m.height = msg.Width, msg.Height
+		m.input.SetWidth(max(10, msg.Width-20))
+		m.bar.SetWidth(min(60, max(10, msg.Width-20)))
+		return m, nil
+	case searchMsg:
+		if msg.seq != m.seq {
+			return m, nil
+		}
+		return m, m.searchCmd(msg.seq, m.input.Value())
+	case resultsMsg:
+		if msg.seq != m.seq {
+			return m, nil
+		}
+		m.err = msg.err
+		m.hits = rank(m.input.Value(), msg.hits)
+		m.cursor = 0
+		m.searched = true
+		m.online = msg.online
+		m.loadTOC()
+		return m, nil
+	case librariesMsg, folderMsg, progressMsg, jobDoneMsg, removedMsg:
+		return m.updateLibraries(msg)
+	case quitTimeoutMsg:
+		return m, tea.Quit
+	case tea.KeyPressMsg:
+		if m.screen == screenLibraries {
+			return m.libraryKey(msg)
+		}
+		switch msg.String() {
+		case "esc", "ctrl+c":
+			return m, tea.Quit
+		case "ctrl+l":
+			m.screen = screenLibraries
+			m.status = ""
+			return m, m.loadLibraries()
+		case "up", "ctrl+p":
+			m.move(-1)
+			return m, nil
+		case "down", "ctrl+n":
+			m.move(1)
+			return m, nil
+		case "enter":
+			m.withFile(m.act.Open, "")
+			return m, nil
+		case "ctrl+o":
+			m.withFile(m.act.Reveal, "")
+			return m, nil
+		case "ctrl+y":
+			m.withFile(m.act.Copy, "Шлях скопійовано")
+			return m, nil
+		case "tab":
+			if h := m.selected(); h != nil && h.Author != "" {
+				m.input.SetValue(h.Author)
+				m.input.CursorEnd()
+				return m, m.queueSearch()
+			}
+			return m, nil
+		}
+	}
+	if m.screen != screenSearch {
+		return m, nil
+	}
+	before := m.input.Value()
+	var cmd tea.Cmd
+	m.input, cmd = m.input.Update(msg)
+	if m.input.Value() != before {
+		return m, tea.Batch(cmd, m.queueSearch())
+	}
+	return m, cmd
+}
+
+// queueSearch starts a new debounce period; only the latest one searches.
+func (m *Model) queueSearch() tea.Cmd {
+	m.seq++
+	m.status = ""
+	seq := m.seq
+	return tea.Tick(debounce, func(time.Time) tea.Msg { return searchMsg{seq: seq} })
+}
+
+func (m Model) searchCmd(seq int, q string) tea.Cmd {
+	b := m.b
+	root := m.act.Root
+	return func() tea.Msg {
+		hits, err := b.Search(index.Query{Text: q, Limit: candidateLimit})
+		online := map[string]bool{}
+		for _, h := range hits {
+			if _, seen := online[h.VolumeID]; !seen {
+				_, ok := root(h.VolumeID, h.RootRel)
+				online[h.VolumeID] = ok
+			}
+		}
+		return resultsMsg{seq: seq, hits: hits, online: online, err: err}
+	}
+}
+
+func (m *Model) move(d int) {
+	if len(m.hits) == 0 {
+		return
+	}
+	m.cursor = min(max(m.cursor+d, 0), len(m.hits)-1)
+	m.loadTOC()
+}
+
+func (m Model) selected() *index.Hit {
+	if m.cursor < 0 || m.cursor >= len(m.hits) {
+		return nil
+	}
+	return &m.hits[m.cursor]
+}
+
+func (m *Model) withFile(fn func(string) error, okStatus string) {
+	h := m.selected()
+	if h == nil {
+		return
+	}
+	root, ok := m.act.Root(h.VolumeID, h.RootRel)
+	if !ok {
+		m.status = fmt.Sprintf("Диск «%s» не підключено — підключіть його, щоб відкрити файл", h.VolumeName)
+		return
+	}
+	p := library.FilePath(root, h.RelPath)
+	if !m.act.Exists(p) {
+		m.status = "Файл не знайдено: " + h.RelPath
+		return
+	}
+	if err := fn(p); err != nil {
+		m.status = "Помилка: " + err.Error()
+		return
+	}
+	m.status = okStatus
+}
+
+func (m *Model) loadTOC() {
+	h := m.selected()
+	if h == nil || !h.IsCollection {
+		return
+	}
+	if _, ok := m.toc[h.BookID]; ok {
+		return
+	}
+	if titles, err := m.b.BookWorks(h.BookID); err == nil {
+		m.toc[h.BookID] = titles
+	}
+}

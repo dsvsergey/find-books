@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0">
+ <description>
+  <title-info>
+   <author><first-name>Александр</first-name><last-name>Беляев</last-name></author>
+   <book-title>Человек-амфибия</book-title>
+  </title-info>
+  <publish-info><year>1928</year></publish-info>
+ </description>
+ <body>
+  <section>
+   <title><p>Часть первая</p></title>
+   <section><title><p>Глава 1</p><p>«Морской дьявол»</p></title><p>Текст&nbsp;главы.</p></section>
+   <section><title><p>Глава 2</p><p>Доктор Сальватор</p></title><p>Текст.</p></section>
+  </section>
+  <section>
+   <title><p>Часть вторая</p></title>
+   <section><title><p>Глава 1</p><p>Ихтиандр</p></title><p>Текст.</p></section>
+  </section>
+ </body>
+</FictionBook>
