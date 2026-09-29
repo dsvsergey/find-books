@@ -47,6 +47,12 @@ type Actions struct {
 const (
 	debounce       = 50 * time.Millisecond
 	candidateLimit = 500
+	// defaultInputWidth is used for the search field before the first
+	// tea.WindowSizeMsg arrives; without it textinput reports Width() == 0
+	// and truncates the placeholder to a single character. It mirrors the
+	// fallback render width (100) minus the same margin Update applies on
+	// resize (max(10, width-20)).
+	defaultInputWidth = 80
 )
 
 type screen int
@@ -108,10 +114,7 @@ func New(b Backend, act Actions, total int) Model {
 	in := textinput.New()
 	in.Prompt = "🔎 "
 	in.Placeholder = i18n.T(i18n.KeySearchPlaceholder)
-	// A sane default width so the placeholder renders in full before the
-	// first tea.WindowSizeMsg arrives (textinput truncates it to one
-	// character at width 0); Update replaces this with the real width.
-	in.SetWidth(max(10, 100-20))
+	in.SetWidth(defaultInputWidth) // Update replaces this with the real width
 	in.Focus()
 	m := Model{
 		b: b, act: act, total: total, input: in,
@@ -216,6 +219,7 @@ func (m *Model) toggleLang() tea.Cmd {
 	}
 	i18n.Set(next)
 	m.input.Placeholder = i18n.T(i18n.KeySearchPlaceholder)
+	m.status = ""
 	save := m.act.SaveLang
 	return func() tea.Msg { return langSavedMsg{err: save(next)} }
 }

@@ -24,7 +24,10 @@ func DefaultActions() Actions {
 		Exists:       func(p string) bool { _, err := os.Stat(p); return err == nil },
 		ChooseFolder: platform.ChooseFolder,
 		SaveLang: func(l i18n.Lang) error {
-			c, _ := config.Load()
+			c, err := config.Load()
+			if err != nil {
+				return err
+			}
 			c.Lang = string(l)
 			return config.Save(c)
 		},

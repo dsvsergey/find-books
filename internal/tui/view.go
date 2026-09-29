@@ -37,7 +37,7 @@ func (m Model) render() string {
 		w = 100
 	}
 	var b strings.Builder
-	b.WriteString(m.renderInput() + "  " + styleDim.Render(i18n.T(i18n.KeyHitsCount, len(m.hits), m.total)) + "\n\n")
+	b.WriteString(m.input.View() + "  " + styleDim.Render(i18n.T(i18n.KeyHitsCount, len(m.hits), m.total)) + "\n\n")
 	if m.err != nil {
 		b.WriteString(styleError.Render(i18n.T(i18n.KeySearchError, m.err.Error())) + "\n")
 	}
@@ -58,18 +58,6 @@ func (m Model) render() string {
 	help := i18n.T(i18n.KeyLangToggle) + " · " + i18n.T(i18n.KeySearchHelp)
 	b.WriteString("\n" + styleDim.Render(ansi.Truncate(help, w, "…")))
 	return b.String()
-}
-
-// renderInput renders the search field. With an empty value it renders the
-// placeholder as one styled run instead of using textinput's built-in
-// placeholder view, which overlays a virtual cursor on the placeholder's
-// first character as a separately styled span — splitting any substring
-// check that spans the placeholder text.
-func (m Model) renderInput() string {
-	if m.input.Value() != "" {
-		return m.input.View()
-	}
-	return m.input.Prompt + styleDim.Render(m.input.Placeholder)
 }
 
 // window returns the slice of hits that fits the screen around the cursor.
