@@ -16,20 +16,25 @@ import (
 )
 
 // VolumeID returns the volume UUID and display name of the volume that
-// contains path. Volumes without a UUID fall back to "mnt:<mount point>".
+// contains path. Volumes without a UUID, network mounts (not backed by a
+// /dev node) and volumes diskutil cannot describe fall back to
+// "mnt:<mount point>", named after the mount point.
 func VolumeID(path string) (id, name string, err error) {
 	var st unix.Statfs_t
 	if err := unix.Statfs(path, &st); err != nil {
 		return "", "", fmt.Errorf("statfs %s: %w", path, err)
 	}
 	mnt := unix.ByteSliceToString(st.Mntonname[:])
+	if !strings.HasPrefix(unix.ByteSliceToString(st.Mntfromname[:]), "/dev/") {
+		return "mnt:" + mnt, mnt, nil
+	}
 	volMu.Lock()
 	defer volMu.Unlock()
 	loadVolumesLocked()
 	defer saveVolumesLocked()
-	v, err := volumeLocked(&st)
+	v, err := volumeLocked(&st) // failures are not cached
 	if err != nil {
-		return "", "", err
+		return "mnt:" + mnt, mnt, nil
 	}
 	id, name = v.UUID, v.Name
 	if id == "" {
@@ -117,15 +122,26 @@ var (
 )
 
 // fingerprint identifies a mounted filesystem cheaply, without a subprocess.
-// The mount point is deliberately not part of it.
-func fingerprint(st *unix.Statfs_t) string {
-	return fmt.Sprintf("%s|%d:%d|%d|%d", unix.ByteSliceToString(st.Mntfromname[:]),
-		st.Fsid.Val[0], st.Fsid.Val[1], st.Blocks, st.Bsize)
+// The mount point is deliberately not part of it. The birthtime of the
+// volume's root directory tells apart identical disks (same model and
+// size) that get the same device node and fsid on different mounts.
+func fingerprint(from string, fsid [2]int32, blocks uint64, bsize uint32, rootBirth unix.Timespec) string {
+	return fmt.Sprintf("%s|%d:%d|%d|%d|%d.%09d", from, fsid[0], fsid[1], blocks, bsize,
+		rootBirth.Sec, rootBirth.Nsec)
+}
+
+// fingerprintOf fingerprints a mounted filesystem. If its root cannot be
+// stat'ed the birthtime is left zero.
+func fingerprintOf(st *unix.Statfs_t) string {
+	var root unix.Stat_t
+	_ = unix.Stat(unix.ByteSliceToString(st.Mntonname[:]), &root)
+	return fingerprint(unix.ByteSliceToString(st.Mntfromname[:]), st.Fsid.Val, st.Blocks, st.Bsize,
+		root.Btim)
 }
 
 // volumeLocked returns the cached volume for st, asking diskutil on a miss.
 func volumeLocked(st *unix.Statfs_t) (volume, error) {
-	fp := fingerprint(st)
+	fp := fingerprintOf(st)
 	if v, ok := volumes[fp]; ok {
 		return v, nil
 	}

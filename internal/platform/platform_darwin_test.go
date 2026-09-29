@@ -1,10 +1,14 @@
 package platform
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync/atomic"
 	"testing"
+
+	"golang.org/x/sys/unix"
 )
 
 func TestVolumeIDOfRoot(t *testing.T) {
@@ -155,5 +159,48 @@ func TestVolumeIDCorruptCacheFile(t *testing.T) {
 	}
 	if !ok || mp != want {
 		t.Fatalf("MountPoint = %q,%v, want %q", mp, ok, want)
+	}
+}
+
+func TestFingerprintIncludesRootBirthtime(t *testing.T) {
+	fsid := [2]int32{1, 2}
+	a := fingerprint("/dev/disk4s1", fsid, 1000, 4096, unix.Timespec{Sec: 1700000000, Nsec: 1})
+	b := fingerprint("/dev/disk4s1", fsid, 1000, 4096, unix.Timespec{Sec: 1700000000, Nsec: 2})
+	c := fingerprint("/dev/disk4s1", fsid, 1000, 4096, unix.Timespec{Sec: 1700000001, Nsec: 1})
+	if a == b || a == c || b == c {
+		t.Fatalf("fingerprints must differ by root birthtime: %q %q %q", a, b, c)
+	}
+	if again := fingerprint("/dev/disk4s1", fsid, 1000, 4096, unix.Timespec{Sec: 1700000000, Nsec: 1}); again != a {
+		t.Fatalf("fingerprint not deterministic: %q vs %q", again, a)
+	}
+}
+
+func TestVolumeIDFallsBackToMountWhenDiskutilFails(t *testing.T) {
+	useCacheFile(t, filepath.Join(t.TempDir(), "volumes.json"))
+	real := diskutilInfoFunc
+	diskutilInfoFunc = func(string) (map[string]string, error) { return nil, errors.New("diskutil: boom") }
+	dir, err := filepath.EvalSymlinks(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	mnt, err := mountOf(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	id, name, err := VolumeID(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if id != "mnt:"+mnt || name != mnt {
+		t.Fatalf("VolumeID = %q, %q; want mnt:%s, %s", id, name, mnt, mnt)
+	}
+	if mp, ok := MountPoint(id); !ok || mp != mnt {
+		t.Fatalf("MountPoint(%q) = %q, %v; want %q", id, mp, ok, mnt)
+	}
+	// The failure is not cached: once diskutil works, the real UUID comes back.
+	diskutilInfoFunc = real
+	resetVolumeCache()
+	if id2, _, err := VolumeID(dir); err != nil || strings.HasPrefix(id2, "mnt:") {
+		t.Fatalf("after diskutil recovers: id = %q, %v", id2, err)
 	}
 }
