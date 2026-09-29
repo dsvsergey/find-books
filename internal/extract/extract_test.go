@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"findbooks/internal/fb2"
+	"findbooks/internal/textnorm"
 )
 
 func sec(title string, children ...*fb2.Section) *fb2.Section {
@@ -128,6 +129,22 @@ func TestWorks(t *testing.T) {
 			want:     []Work{{"Повесть", "Роберт Шекли", "Повесть"}},
 			wantColl: false,
 		},
+		{
+			name: "bare surname section is not an author section",
+			book: fb2.Book{
+				Title:   "Антология",
+				Authors: []fb2.Author{nosov, pidorenko},
+				Sections: []*fb2.Section{
+					sec("Носов", sec("Повесть")),
+					sec("Рассказ Б"),
+				},
+			},
+			want: []Work{
+				{"Носов", "", "Носов"},
+				{"Рассказ Б", "", "Рассказ Б"},
+			},
+			wantColl: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -139,6 +156,31 @@ func TestWorks(t *testing.T) {
 				t.Errorf("works =\n%q\nwant\n%q", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestMatchAuthor(t *testing.T) {
+	nosov := fb2.Author{First: "Евгений", Middle: "Валентинович", Last: "Носов"}
+	authors := []fb2.Author{nosov}
+
+	tests := []struct {
+		input string
+		want  string
+	}{
+		{"Носов", ""},                        // bare surname, no match
+		{"Евгений Носов", "Евгений Носов"},    // first + last
+		{"Носов Евгений", "Евгений Носов"},    // last + first
+		{"Е. Носов", "Евгений Носов"},         // initial + last
+		{"Евгений Валентинович Носов", "Евгений Носов"}, // full name
+		{"Евгений В. Носов", "Евгений Носов"}, // first + middle initial + last
+	}
+
+	for _, tt := range tests {
+		norm := textnorm.Normalize(tt.input)
+		got := matchAuthor(norm, authors)
+		if got != tt.want {
+			t.Errorf("matchAuthor(normalize(%q)) = %q, want %q", tt.input, got, tt.want)
+		}
 	}
 }
 

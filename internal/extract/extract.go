@@ -88,7 +88,7 @@ func isNoise(norm string) bool {
 
 // matchAuthor returns the author's display name when the normalized title
 // consists only of that author's name parts (initials allowed) and contains
-// the full last name.
+// the full last name and at least one given name token.
 func matchAuthor(norm string, authors []fb2.Author) string {
 	words := strings.Fields(norm)
 	if len(words) == 0 || len(words) > 5 {
@@ -100,7 +100,7 @@ func matchAuthor(norm string, authors []fb2.Author) string {
 			continue
 		}
 		given := strings.Fields(textnorm.Normalize(a.First + " " + a.Middle))
-		if containsAll(words, last) && allKnown(words, last, given) {
+		if containsAll(words, last) && hasGivenName(words, given) && allKnown(words, last, given) {
 			return a.Name()
 		}
 	}
@@ -127,4 +127,18 @@ func allKnown(words, last, given []string) bool {
 		return false
 	}
 	return true
+}
+
+func hasGivenName(words, given []string) bool {
+	for _, w := range words {
+		// Check full given name
+		if slices.Contains(given, w) {
+			return true
+		}
+		// Check single-letter initial
+		if utf8.RuneCountInString(w) == 1 && slices.ContainsFunc(given, func(g string) bool { return strings.HasPrefix(g, w) }) {
+			return true
+		}
+	}
+	return false
 }
