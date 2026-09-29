@@ -2,8 +2,11 @@ package cli
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -190,5 +193,60 @@ func TestRootCommandStartsTUI(t *testing.T) {
 	t.Cleanup(func() { runTUI = orig })
 	if _, _, err := run(t, db); err != nil || gotTotal != 1 {
 		t.Fatalf("err = %v, total = %d", err, gotTotal)
+	}
+}
+
+func TestAddScanFailureHintsUpdate(t *testing.T) {
+	skipUnlessDarwin(t)
+	root, db := newLibrary(t)
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel() // the first scan fails as if interrupted with Ctrl+C
+	cmd := NewRootCmd()
+	cmd.SetOut(io.Discard)
+	cmd.SetErr(io.Discard)
+	cmd.SetArgs([]string{"--db", db, "add", root, "--name", "Тест"})
+	err := cmd.ExecuteContext(ctx)
+	if err == nil {
+		t.Fatal("add with a failed scan must fail")
+	}
+	if !strings.Contains(err.Error(), "findbooks update «Тест»") || !strings.Contains(err.Error(), "зареєстровано") {
+		t.Fatalf("err = %q, want a hint to run findbooks update", err)
+	}
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("err = %v must still wrap context.Canceled", err)
+	}
+	if out, _, err := run(t, db, "list"); err != nil || !strings.Contains(out, "Тест") {
+		t.Fatalf("library not registered: %v\n%s", err, out)
+	}
+	if _, stderr, err := run(t, db, "update", "Тест"); err != nil || !strings.Contains(stderr, "Додано: 2") {
+		t.Fatalf("update after failed add: %v\n%s", err, stderr)
+	}
+}
+
+func TestScanIncompleteErrorMessage(t *testing.T) {
+	err := scanIncompleteError("Б", errors.New("диск зник"))
+	want := "бібліотеку «Б» зареєстровано, але індексування не завершено: диск зник — продовжіть: findbooks update «Б»"
+	if err.Error() != want {
+		t.Fatalf("got %q\nwant %q", err, want)
+	}
+}
+
+func TestExitCode(t *testing.T) {
+	for _, tc := range []struct {
+		err        error
+		code       int
+		wantStderr string
+	}{
+		{nil, 0, ""},
+		{errors.New("бум"), 1, "помилка: бум\n"},
+		{context.Canceled, 130, "перервано\n"},
+		{fmt.Errorf("scan: %w", context.Canceled), 130, "перервано\n"},
+		{scanIncompleteError("Б", context.Canceled), 130,
+			"перервано\nбібліотеку «Б» зареєстровано, але індексування не завершено — продовжіть: findbooks update «Б»\n"},
+	} {
+		var buf bytes.Buffer
+		if code := exitCode(tc.err, &buf); code != tc.code || buf.String() != tc.wantStderr {
+			t.Errorf("exitCode(%v) = %d, %q; want %d, %q", tc.err, code, buf.String(), tc.code, tc.wantStderr)
+		}
 	}
 }

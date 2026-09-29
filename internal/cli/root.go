@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -104,9 +105,23 @@ func NewRootCmd() *cobra.Command {
 func Execute() int {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()
-	if err := NewRootCmd().ExecuteContext(ctx); err != nil {
-		fmt.Fprintln(os.Stderr, "помилка:", err)
+	return exitCode(NewRootCmd().ExecuteContext(ctx), os.Stderr)
+}
+
+// exitCode prints err to stderr and returns the process exit code:
+// 130 (as shells report SIGINT) for Ctrl+C, 1 for other errors.
+func exitCode(err error, stderr io.Writer) int {
+	switch {
+	case err == nil:
+		return 0
+	case errors.Is(err, context.Canceled):
+		fmt.Fprintln(stderr, "перервано")
+		if si, ok := errors.AsType[*scanIncomplete](err); ok {
+			fmt.Fprintln(stderr, si)
+		}
+		return 130
+	default:
+		fmt.Fprintln(stderr, "помилка:", err)
 		return 1
 	}
-	return 0
 }
