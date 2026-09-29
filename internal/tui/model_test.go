@@ -120,6 +120,39 @@ func TestStaleResultsIgnored(t *testing.T) {
 	}
 }
 
+// TestResultsMsgUsesPrecomputedOnlineMap pins that Update never calls
+// Actions.Root synchronously: the online map must arrive ready-made on
+// resultsMsg (computed inside the async search command), because Root can
+// trigger a slow diskutil rescan on a cache miss and must never block the
+// Bubble Tea event loop.
+func TestResultsMsgUsesPrecomputedOnlineMap(t *testing.T) {
+	var rootCalls int
+	act := Actions{
+		Root: func(vol, rootRel string) (string, bool) {
+			rootCalls++
+			return filepath.Join("/Volumes", vol, rootRel), true
+		},
+		Open:   func(string) error { return nil },
+		Reveal: func(string) error { return nil },
+		Copy:   func(string) error { return nil },
+	}
+	src := &fakeSearcher{hits: []index.Hit{chuzhie}}
+	m := New(src, act, 1234)
+	tm, _ := typeText(m, "чуж")
+	before := rootCalls
+	tm, _ = tm.Update(resultsMsg{
+		seq:    tm.(Model).seq,
+		hits:   []index.Hit{chuzhie},
+		online: map[string]bool{"dsvDev": true},
+	})
+	if rootCalls != before {
+		t.Fatalf("Root called %d time(s) during Update; must be computed by the search command, not Update", rootCalls-before)
+	}
+	if !strings.Contains(tm.(Model).View().Content, "●") {
+		t.Fatal("online marker missing from view")
+	}
+}
+
 func TestRankPutsClosestFirst(t *testing.T) {
 	tm, _, _ := searched(t, true, "чужие дети")
 	if got := tm.(Model).hits[0].Title; got != "ЧУЖИЕ ДЕТИ" {

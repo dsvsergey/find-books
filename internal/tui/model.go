@@ -33,9 +33,10 @@ const (
 type searchMsg struct{ seq int }
 
 type resultsMsg struct {
-	seq  int
-	hits []index.Hit
-	err  error
+	seq    int
+	hits   []index.Hit
+	online map[string]bool
+	err    error
 }
 
 type Model struct {
@@ -84,7 +85,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.hits = rank(m.input.Value(), msg.hits)
 		m.cursor = 0
 		m.searched = true
-		m.refreshOnline()
+		m.online = msg.online
 		m.loadTOC()
 		return m, nil
 	case tea.KeyPressMsg:
@@ -134,9 +135,17 @@ func (m *Model) queueSearch() tea.Cmd {
 
 func (m Model) searchCmd(seq int, q string) tea.Cmd {
 	src := m.src
+	root := m.act.Root
 	return func() tea.Msg {
 		hits, err := src.Search(index.Query{Text: q, Limit: candidateLimit})
-		return resultsMsg{seq: seq, hits: hits, err: err}
+		online := map[string]bool{}
+		for _, h := range hits {
+			if _, seen := online[h.VolumeID]; !seen {
+				_, ok := root(h.VolumeID, h.RootRel)
+				online[h.VolumeID] = ok
+			}
+		}
+		return resultsMsg{seq: seq, hits: hits, online: online, err: err}
 	}
 }
 
@@ -170,16 +179,6 @@ func (m *Model) withFile(fn func(string) error, okStatus string) {
 		return
 	}
 	m.status = okStatus
-}
-
-func (m *Model) refreshOnline() {
-	m.online = map[string]bool{}
-	for _, h := range m.hits {
-		if _, seen := m.online[h.VolumeID]; !seen {
-			_, ok := m.act.Root(h.VolumeID, h.RootRel)
-			m.online[h.VolumeID] = ok
-		}
-	}
 }
 
 func (m *Model) loadTOC() {
