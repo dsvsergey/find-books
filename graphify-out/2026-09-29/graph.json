@@ -262,7 +262,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "internal_cli_list",
-      "community": 0,
+      "community": 20,
       "norm_label": "list.go"
     },
     {
@@ -272,7 +272,7 @@
       "source_location": "L12",
       "_origin": "ast",
       "id": "internal_cli_list_onlinemark",
-      "community": 0,
+      "community": 20,
       "norm_label": "onlinemark()"
     },
     {
@@ -282,7 +282,7 @@
       "source_location": "L19",
       "_origin": "ast",
       "id": "internal_cli_list_newlistcmd",
-      "community": 0,
+      "community": 20,
       "norm_label": "newlistcmd()"
     },
     {
@@ -292,7 +292,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "internal_cli_list_go_command",
-      "community": 0,
+      "community": 20,
       "norm_label": "command"
     },
     {
@@ -612,7 +612,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "internal_cli_search",
-      "community": 9,
+      "community": 20,
       "norm_label": "search.go"
     },
     {
@@ -622,7 +622,7 @@
       "source_location": "L17",
       "_origin": "ast",
       "id": "cli_jsonhit",
-      "community": 9,
+      "community": 20,
       "norm_label": "jsonhit"
     },
     {
@@ -632,7 +632,7 @@
       "source_location": "L31",
       "_origin": "ast",
       "id": "internal_cli_search_newsearchcmd",
-      "community": 9,
+      "community": 0,
       "norm_label": "newsearchcmd()"
     },
     {
@@ -642,7 +642,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "internal_cli_search_go_command",
-      "community": 9,
+      "community": 0,
       "norm_label": "command"
     },
     {
@@ -652,7 +652,7 @@
       "source_location": "L77",
       "_origin": "ast",
       "id": "internal_cli_search_writejson",
-      "community": 9,
+      "community": 20,
       "norm_label": "writejson()"
     },
     {
@@ -662,7 +662,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "internal_cli_search_go_writer",
-      "community": 9,
+      "community": 20,
       "norm_label": "writer"
     },
     {
@@ -672,7 +672,7 @@
       "source_location": "L95",
       "_origin": "ast",
       "id": "internal_cli_search_writetable",
-      "community": 9,
+      "community": 20,
       "norm_label": "writetable()"
     },
     {
@@ -2962,7 +2962,7 @@
       "source_location": "L36",
       "_origin": "ast",
       "id": "tui_resultsmsg",
-      "community": 2,
+      "community": 9,
       "norm_label": "resultsmsg"
     },
     {
@@ -3102,7 +3102,7 @@
       "source_location": "L14",
       "_origin": "ast",
       "id": "tui_fakesearcher",
-      "community": 3,
+      "community": 9,
       "norm_label": "fakesearcher"
     },
     {
@@ -3122,7 +3122,7 @@
       "source_location": "L25",
       "_origin": "ast",
       "id": "tui_fakesearcher_bookworks",
-      "community": 3,
+      "community": 9,
       "norm_label": ".bookworks()"
     },
     {
@@ -3462,7 +3462,7 @@
       "source_location": "L27",
       "_origin": "ast",
       "id": "internal_tui_view_go_tui_model",
-      "community": 9,
+      "community": 47,
       "norm_label": "model"
     },
     {
@@ -3472,7 +3472,7 @@
       "source_location": "L27",
       "_origin": "ast",
       "id": "tui_model_view",
-      "community": 9,
+      "community": 47,
       "norm_label": ".view()"
     },
     {
@@ -3482,7 +3482,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "view",
-      "community": 9,
+      "community": 47,
       "norm_label": "view"
     },
     {
@@ -3492,7 +3492,7 @@
       "source_location": "L33",
       "_origin": "ast",
       "id": "tui_model_render",
-      "community": 9,
+      "community": 47,
       "norm_label": ".render()"
     },
     {
@@ -3502,7 +3502,7 @@
       "source_location": "L62",
       "_origin": "ast",
       "id": "tui_model_window",
-      "community": 9,
+      "community": 47,
       "norm_label": ".window()"
     },
     {
@@ -3512,7 +3512,7 @@
       "source_location": "L74",
       "_origin": "ast",
       "id": "tui_model_mark",
-      "community": 9,
+      "community": 47,
       "norm_label": ".mark()"
     },
     {
@@ -3522,7 +3522,7 @@
       "source_location": "L81",
       "_origin": "ast",
       "id": "tui_model_renderhit",
-      "community": 9,
+      "community": 47,
       "norm_label": ".renderhit()"
     },
     {
@@ -3532,8 +3532,148 @@
       "source_location": "L101",
       "_origin": "ast",
       "id": "tui_model_renderdetails",
-      "community": 9,
+      "community": 47,
       "norm_label": ".renderdetails()"
+    },
+    {
+      "label": "final-fix-report.md",
+      "file_type": "document",
+      "source_file": ".superpowers/sdd/2026-09-29-findbooks/final-fix-report.md",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "superpowers_sdd_2026_09_29_findbooks_final_fix_report",
+      "community": 46,
+      "norm_label": "final-fix-report.md"
+    },
+    {
+      "label": "Final fix wave \u2014 report",
+      "file_type": "document",
+      "source_file": ".superpowers/sdd/2026-09-29-findbooks/final-fix-report.md",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "superpowers_sdd_2026_09_29_findbooks_final_fix_report_final_fix_wave_report",
+      "community": 46,
+      "norm_label": "final fix wave \u2014 report"
+    },
+    {
+      "label": "FW-1: failed parses are retried",
+      "file_type": "document",
+      "source_file": ".superpowers/sdd/2026-09-29-findbooks/final-fix-report.md",
+      "source_location": "L17",
+      "_origin": "ast",
+      "id": "superpowers_sdd_2026_09_29_findbooks_final_fix_report_fw_1_failed_parses_are_retried",
+      "community": 46,
+      "norm_label": "fw-1: failed parses are retried"
+    },
+    {
+      "label": "FW-2: unreadable directories never cause deletions",
+      "file_type": "document",
+      "source_file": ".superpowers/sdd/2026-09-29-findbooks/final-fix-report.md",
+      "source_location": "L29",
+      "_origin": "ast",
+      "id": "superpowers_sdd_2026_09_29_findbooks_final_fix_report_fw_2_unreadable_directories_never_cause_deletions",
+      "community": 46,
+      "norm_label": "fw-2: unreadable directories never cause deletions"
+    },
+    {
+      "label": "FW-3: schema version and extractor version",
+      "file_type": "document",
+      "source_file": ".superpowers/sdd/2026-09-29-findbooks/final-fix-report.md",
+      "source_location": "L44",
+      "_origin": "ast",
+      "id": "superpowers_sdd_2026_09_29_findbooks_final_fix_report_fw_3_schema_version_and_extractor_version",
+      "community": 46,
+      "norm_label": "fw-3: schema version and extractor version"
+    },
+    {
+      "label": "FW-4: identical disks get different fingerprints",
+      "file_type": "document",
+      "source_file": ".superpowers/sdd/2026-09-29-findbooks/final-fix-report.md",
+      "source_location": "L72",
+      "_origin": "ast",
+      "id": "superpowers_sdd_2026_09_29_findbooks_final_fix_report_fw_4_identical_disks_get_different_fingerprints",
+      "community": 46,
+      "norm_label": "fw-4: identical disks get different fingerprints"
+    },
+    {
+      "label": "FW-5: non-/dev volumes can be added",
+      "file_type": "document",
+      "source_file": ".superpowers/sdd/2026-09-29-findbooks/final-fix-report.md",
+      "source_location": "L81",
+      "_origin": "ast",
+      "id": "superpowers_sdd_2026_09_29_findbooks_final_fix_report_fw_5_non_dev_volumes_can_be_added",
+      "community": 46,
+      "norm_label": "fw-5: non-/dev volumes can be added"
+    },
+    {
+      "label": "FW-6: recovery hint after a failed first scan",
+      "file_type": "document",
+      "source_file": ".superpowers/sdd/2026-09-29-findbooks/final-fix-report.md",
+      "source_location": "L94",
+      "_origin": "ast",
+      "id": "superpowers_sdd_2026_09_29_findbooks_final_fix_report_fw_6_recovery_hint_after_a_failed_first_scan",
+      "community": 46,
+      "norm_label": "fw-6: recovery hint after a failed first scan"
+    },
+    {
+      "label": "FW-7a: skip Windows system folders",
+      "file_type": "document",
+      "source_file": ".superpowers/sdd/2026-09-29-findbooks/final-fix-report.md",
+      "source_location": "L108",
+      "_origin": "ast",
+      "id": "superpowers_sdd_2026_09_29_findbooks_final_fix_report_fw_7a_skip_windows_system_folders",
+      "community": 46,
+      "norm_label": "fw-7a: skip windows system folders"
+    },
+    {
+      "label": "FW-7b: unknown encodings try UTF-8",
+      "file_type": "document",
+      "source_file": ".superpowers/sdd/2026-09-29-findbooks/final-fix-report.md",
+      "source_location": "L114",
+      "_origin": "ast",
+      "id": "superpowers_sdd_2026_09_29_findbooks_final_fix_report_fw_7b_unknown_encodings_try_utf_8",
+      "community": 46,
+      "norm_label": "fw-7b: unknown encodings try utf-8"
+    },
+    {
+      "label": "FW-7c: missing files in the TUI",
+      "file_type": "document",
+      "source_file": ".superpowers/sdd/2026-09-29-findbooks/final-fix-report.md",
+      "source_location": "L122",
+      "_origin": "ast",
+      "id": "superpowers_sdd_2026_09_29_findbooks_final_fix_report_fw_7c_missing_files_in_the_tui",
+      "community": 46,
+      "norm_label": "fw-7c: missing files in the tui"
+    },
+    {
+      "label": "FW-7d: Ctrl+C message",
+      "file_type": "document",
+      "source_file": ".superpowers/sdd/2026-09-29-findbooks/final-fix-report.md",
+      "source_location": "L134",
+      "_origin": "ast",
+      "id": "superpowers_sdd_2026_09_29_findbooks_final_fix_report_fw_7d_ctrl_c_message",
+      "community": 46,
+      "norm_label": "fw-7d: ctrl+c message"
+    },
+    {
+      "label": "Final verification (HEAD faef5c8)",
+      "file_type": "document",
+      "source_file": ".superpowers/sdd/2026-09-29-findbooks/final-fix-report.md",
+      "source_location": "L143",
+      "_origin": "ast",
+      "id": "superpowers_sdd_2026_09_29_findbooks_final_fix_report_final_verification_head_faef5c8",
+      "community": 46,
+      "norm_label": "final verification (head faef5c8)"
+    },
+    {
+      "label": "Notes",
+      "file_type": "document",
+      "source_file": ".superpowers/sdd/2026-09-29-findbooks/final-fix-report.md",
+      "source_location": "L168",
+      "_origin": "ast",
+      "id": "superpowers_sdd_2026_09_29_findbooks_final_fix_report_notes",
+      "community": 46,
+      "norm_label": "notes"
     },
     {
       "label": "progress.md",
@@ -14504,6 +14644,136 @@
       "weight": 1.0,
       "source": "tui_model_renderhit",
       "target": "tui_model_mark",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": ".superpowers/sdd/2026-09-29-findbooks/final-fix-report.md",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "superpowers_sdd_2026_09_29_findbooks_final_fix_report",
+      "target": "superpowers_sdd_2026_09_29_findbooks_final_fix_report_final_fix_wave_report",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": ".superpowers/sdd/2026-09-29-findbooks/final-fix-report.md",
+      "source_location": "L143",
+      "weight": 1.0,
+      "source": "superpowers_sdd_2026_09_29_findbooks_final_fix_report_final_fix_wave_report",
+      "target": "superpowers_sdd_2026_09_29_findbooks_final_fix_report_final_verification_head_faef5c8",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": ".superpowers/sdd/2026-09-29-findbooks/final-fix-report.md",
+      "source_location": "L17",
+      "weight": 1.0,
+      "source": "superpowers_sdd_2026_09_29_findbooks_final_fix_report_final_fix_wave_report",
+      "target": "superpowers_sdd_2026_09_29_findbooks_final_fix_report_fw_1_failed_parses_are_retried",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": ".superpowers/sdd/2026-09-29-findbooks/final-fix-report.md",
+      "source_location": "L29",
+      "weight": 1.0,
+      "source": "superpowers_sdd_2026_09_29_findbooks_final_fix_report_final_fix_wave_report",
+      "target": "superpowers_sdd_2026_09_29_findbooks_final_fix_report_fw_2_unreadable_directories_never_cause_deletions",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": ".superpowers/sdd/2026-09-29-findbooks/final-fix-report.md",
+      "source_location": "L44",
+      "weight": 1.0,
+      "source": "superpowers_sdd_2026_09_29_findbooks_final_fix_report_final_fix_wave_report",
+      "target": "superpowers_sdd_2026_09_29_findbooks_final_fix_report_fw_3_schema_version_and_extractor_version",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": ".superpowers/sdd/2026-09-29-findbooks/final-fix-report.md",
+      "source_location": "L72",
+      "weight": 1.0,
+      "source": "superpowers_sdd_2026_09_29_findbooks_final_fix_report_final_fix_wave_report",
+      "target": "superpowers_sdd_2026_09_29_findbooks_final_fix_report_fw_4_identical_disks_get_different_fingerprints",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": ".superpowers/sdd/2026-09-29-findbooks/final-fix-report.md",
+      "source_location": "L81",
+      "weight": 1.0,
+      "source": "superpowers_sdd_2026_09_29_findbooks_final_fix_report_final_fix_wave_report",
+      "target": "superpowers_sdd_2026_09_29_findbooks_final_fix_report_fw_5_non_dev_volumes_can_be_added",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": ".superpowers/sdd/2026-09-29-findbooks/final-fix-report.md",
+      "source_location": "L94",
+      "weight": 1.0,
+      "source": "superpowers_sdd_2026_09_29_findbooks_final_fix_report_final_fix_wave_report",
+      "target": "superpowers_sdd_2026_09_29_findbooks_final_fix_report_fw_6_recovery_hint_after_a_failed_first_scan",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": ".superpowers/sdd/2026-09-29-findbooks/final-fix-report.md",
+      "source_location": "L108",
+      "weight": 1.0,
+      "source": "superpowers_sdd_2026_09_29_findbooks_final_fix_report_final_fix_wave_report",
+      "target": "superpowers_sdd_2026_09_29_findbooks_final_fix_report_fw_7a_skip_windows_system_folders",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": ".superpowers/sdd/2026-09-29-findbooks/final-fix-report.md",
+      "source_location": "L114",
+      "weight": 1.0,
+      "source": "superpowers_sdd_2026_09_29_findbooks_final_fix_report_final_fix_wave_report",
+      "target": "superpowers_sdd_2026_09_29_findbooks_final_fix_report_fw_7b_unknown_encodings_try_utf_8",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": ".superpowers/sdd/2026-09-29-findbooks/final-fix-report.md",
+      "source_location": "L122",
+      "weight": 1.0,
+      "source": "superpowers_sdd_2026_09_29_findbooks_final_fix_report_final_fix_wave_report",
+      "target": "superpowers_sdd_2026_09_29_findbooks_final_fix_report_fw_7c_missing_files_in_the_tui",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": ".superpowers/sdd/2026-09-29-findbooks/final-fix-report.md",
+      "source_location": "L134",
+      "weight": 1.0,
+      "source": "superpowers_sdd_2026_09_29_findbooks_final_fix_report_final_fix_wave_report",
+      "target": "superpowers_sdd_2026_09_29_findbooks_final_fix_report_fw_7d_ctrl_c_message",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": ".superpowers/sdd/2026-09-29-findbooks/final-fix-report.md",
+      "source_location": "L168",
+      "weight": 1.0,
+      "source": "superpowers_sdd_2026_09_29_findbooks_final_fix_report_final_fix_wave_report",
+      "target": "superpowers_sdd_2026_09_29_findbooks_final_fix_report_notes",
       "confidence_score": 1.0
     },
     {

@@ -1,11 +1,11 @@
 # Graph Report - find-books  (2026-09-29)
 
 ## Corpus Check
-- 67 files · ~63,913 words
+- 68 files · ~65,715 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 631 nodes · 1019 edges · 46 communities (33 shown, 13 thin omitted)
+- 645 nodes · 1032 edges · 48 communities (34 shown, 14 thin omitted)
 - Extraction: 90% EXTRACTED · 10% INFERRED · 0% AMBIGUOUS · INFERRED: 101 edges (avg confidence: 0.8)
 - Token cost: 0 input · 0 output
 
@@ -57,6 +57,8 @@
 - [[_COMMUNITY_Task 10 fix B persistent volume fingerprint cache|Task 10 fix B: persistent volume fingerprint cache]]
 - [[_COMMUNITY_TestMain|TestMain]]
 - [[_COMMUNITY_TestMain|TestMain]]
+- [[_COMMUNITY_Final fix wave — report|Final fix wave — report]]
+- [[_COMMUNITY_Model|Model]]
 
 ## God Nodes (most connected - your core abstractions)
 1. `Run()` - 17 edges
@@ -66,9 +68,9 @@
 5. `searched()` - 15 edges
 6. `Hit` - 13 edges
 7. `Model` - 13 edges
-8. `NewRootCmd()` - 11 edges
-9. `parser` - 11 edges
-10. `mustHits()` - 11 edges
+8. `Final fix wave — report` - 13 edges
+9. `NewRootCmd()` - 11 edges
+10. `parser` - 11 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `main()` --calls--> `Execute()`  [INFERRED]
@@ -85,23 +87,23 @@
 ## Import Cycles
 - None detected.
 
-## Communities (46 total, 13 thin omitted)
+## Communities (48 total, 14 thin omitted)
 
 ### Community 0 - "NewRootCmd"
-Cohesion: 0.07
-Nodes (41): app, scanIncomplete, main(), Command, newAddCmd(), scanIncompleteError(), copyFixture(), T (+33 more)
+Cohesion: 0.08
+Nodes (40): app, scanIncomplete, main(), Command, newAddCmd(), scanIncompleteError(), copyFixture(), T (+32 more)
 
 ### Community 1 - "Parse"
 Cohesion: 0.12
 Nodes (27): Builder, Decoder, Author, Book, parser, Section, attr(), charsetReader() (+19 more)
 
 ### Community 2 - "Hit"
-Cohesion: 0.21
-Nodes (10): Cmd, Model, New(), DefaultActions(), Run(), Msg, Actions, resultsMsg (+2 more)
+Cohesion: 0.22
+Nodes (9): Cmd, Model, New(), DefaultActions(), Run(), Msg, Actions, Searcher (+1 more)
 
 ### Community 3 - "model_test.go"
-Cohesion: 0.22
-Nodes (24): Cmd, Model, T, key(), newModel(), searched(), settle(), TestDefaultActionsExists() (+16 more)
+Cohesion: 0.25
+Nodes (23): Cmd, Model, T, key(), newModel(), searched(), settle(), TestDefaultActionsExists() (+15 more)
 
 ### Community 4 - "Task 7: Incremental Parallel Library Scanning"
 Cohesion: 0.07
@@ -124,8 +126,8 @@ Cohesion: 0.09
 Nodes (22): Adherence to Constraints, Build Verification (CGO_ENABLED=0), Code Quality, Commit, Completeness vs Brief, Concerns, Dependencies Added, Files Created (+14 more)
 
 ### Community 9 - "mustHits"
-Cohesion: 0.11
-Nodes (23): jsonHit, Hit, Query, Command, Writer, newSearchCmd(), writeJSON(), writeTable() (+15 more)
+Cohesion: 0.18
+Nodes (17): Hit, Query, Store, MatchExpr(), Store, T, mustHits(), seeded() (+9 more)
 
 ### Community 10 - "Task 1 Report: Module Scaffold and Platform Package"
 Cohesion: 0.10
@@ -168,8 +170,8 @@ Cohesion: 0.15
 Nodes (12): 1. Argument-count errors must be in Ukrainian, 2. `Store.Close` errors must not be swallowed on write commands, Concerns, Deviations from the brief, Files changed, Files changed (fix round 1), Fix round 1 (controller-ruled review findings), Self-review (+4 more)
 
 ### Community 20 - "cli_test.go"
-Cohesion: 0.31
-Nodes (11): FilePath(), Locate(), relToMount(), Root(), T, skipUnlessDarwin(), TestFilePathJoinsSlashPath(), TestLocateAndRootRoundTrip() (+3 more)
+Cohesion: 0.16
+Nodes (18): jsonHit, Command, newListCmd(), onlineMark(), Writer, writeJSON(), writeTable(), FilePath() (+10 more)
 
 ### Community 21 - "putBook"
 Cohesion: 0.31
@@ -203,20 +205,24 @@ Nodes (8): progressBar, Command, Model, Store, Time, Writer, newProgressBar(), r
 Cohesion: 0.22
 Nodes (8): Concerns, Cross builds, full test suite, gofmt, Fsid stability (design precondition), GREEN: `go test -race -v ./internal/platform/ ./internal/library/`, RED (new tests before implementation), Task 10 fix B: persistent volume fingerprint cache, Timing: `CGO_ENABLED=0 go build -o findbooks ./cmd/findbooks`, then `time ./findbooks --db "$DB" search чужие дети` x3 (XDG_DATA_HOME=scratchpad/fb-real/xdg), What changed (internal/platform only)
 
+### Community 46 - "Final fix wave — report"
+Cohesion: 0.14
+Nodes (13): Final fix wave — report, Final verification (HEAD faef5c8), FW-1: failed parses are retried, FW-2: unreadable directories never cause deletions, FW-3: schema version and extractor version, FW-4: identical disks get different fingerprints, FW-5: non-/dev volumes can be added, FW-6: recovery hint after a failed first scan (+5 more)
+
 ## Knowledge Gaps
-- **203 isolated node(s):** `findbooks`, `jsonHit`, `searchMsg`, `Pre-flight scan`, `Progress` (+198 more)
+- **215 isolated node(s):** `findbooks`, `jsonHit`, `searchMsg`, `FW-1: failed parses are retried`, `FW-2: unreadable directories never cause deletions` (+210 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **13 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **14 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `New()` connect `Hit` to `NewRootCmd`, `Parse`, `model_test.go`, `mustHits`, `runScan`, `platform_darwin.go`?**
-  _High betweenness centrality (0.132) - this node is a cross-community bridge._
-- **Why does `Hit` connect `mustHits` to `Works`, `Hit`, `model_test.go`, `scan.go`?**
-  _High betweenness centrality (0.075) - this node is a cross-community bridge._
+- **Why does `New()` connect `Hit` to `NewRootCmd`, `Parse`, `model_test.go`, `runScan`, `platform_darwin.go`?**
+  _High betweenness centrality (0.127) - this node is a cross-community bridge._
+- **Why does `Hit` connect `mustHits` to `Hit`, `scan.go`, `Model`, `Works`, `cli_test.go`?**
+  _High betweenness centrality (0.072) - this node is a cross-community bridge._
 - **Why does `Parse()` connect `Parse` to `Hit`?**
-  _High betweenness centrality (0.065) - this node is a cross-community bridge._
+  _High betweenness centrality (0.062) - this node is a cross-community bridge._
 - **Are the 9 inferred relationships involving `Run()` (e.g. with `TestRunCanceled()` and `TestRunDetectsChangesAndRemovals()`) actually correct?**
   _`Run()` has 9 INFERRED edges - model-reasoned connections that need verification._
 - **Are the 12 inferred relationships involving `New()` (e.g. with `TestExitCode()` and `TestScanIncompleteErrorMessage()`) actually correct?**
@@ -224,4 +230,4 @@ _Questions this graph is uniquely positioned to answer:_
 - **Are the 8 inferred relationships involving `Parse()` (e.g. with `New()` and `TestParseGarbage()`) actually correct?**
   _`Parse()` has 8 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `findbooks`, `jsonHit`, `searchMsg` to the rest of the system?**
-  _203 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _215 weakly-connected nodes found - possible documentation gaps or missing edges._

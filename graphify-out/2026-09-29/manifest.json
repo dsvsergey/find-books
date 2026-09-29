@@ -190,8 +190,8 @@
     "semantic_hash": ""
   },
   ".superpowers/sdd/2026-09-29-findbooks/progress.md": {
-    "mtime": 1790673832.8670063,
-    "ast_hash": "2bfc5a7e77dd909399fc4fc2cf1dbbe9",
+    "mtime": 1790674514.7527883,
+    "ast_hash": "4faa60b5d01397702f288bfe69b0855e",
     "semantic_hash": ""
   },
   ".superpowers/sdd/2026-09-29-findbooks/task-1-brief.md": {
@@ -332,6 +332,11 @@
   ".superpowers/sdd/2026-09-29-findbooks/task-10-fix-c-report.md": {
     "mtime": 1790673240.9195478,
     "ast_hash": "b48fa8ab395b0e0dafd73765368cb154",
+    "semantic_hash": ""
+  },
+  ".superpowers/sdd/2026-09-29-findbooks/final-fix-report.md": {
+    "mtime": 1790674336.8765528,
+    "ast_hash": "3a94b2d264f58b2cd6658194b8f78507",
     "semantic_hash": ""
   }
 }
