@@ -1,5 +1,6 @@
 // Package fb2 streams FictionBook 2 files and returns their metadata and the
-// tree of section titles of the main body. Section text is never kept.
+// tree of section titles of the main body. Parse and ParseFile never keep
+// section text; ParseText and ParseTextFile also fill Section.Blocks.
 package fb2
 
 import (
@@ -31,9 +32,12 @@ func (a Author) Name() string {
 
 // Section is a <section> of the main body. Title is the text of its <title>
 // with paragraphs joined by spaces and whitespace collapsed ("" if none).
+// Blocks holds the section's own text (not its subsections') and is filled
+// only by ParseText/ParseTextFile; Parse/ParseFile leave it nil.
 type Section struct {
 	Title    string
 	Children []*Section
+	Blocks   []Block
 }
 
 type Book struct {
@@ -58,13 +62,15 @@ var yearRe = regexp.MustCompile(`\b(1[5-9]\d\d|20\d\d)\b`)
 
 // Parse reads one FB2 document. Bodies with a name attribute (notes,
 // comments) and <binary> payloads are skipped.
-func Parse(r io.Reader) (*Book, error) {
+func Parse(r io.Reader) (*Book, error) { return parse(r, false) }
+
+func parse(r io.Reader, withText bool) (*Book, error) {
 	d := xml.NewDecoder(r)
 	d.Strict = false
 	d.AutoClose = xml.HTMLAutoClose
 	d.Entity = xml.HTMLEntity
 	d.CharsetReader = charsetReader
-	p := &parser{d: d}
+	p := &parser{d: d, withText: withText}
 	for {
 		tok, err := d.Token()
 		if err == io.EOF {
@@ -120,6 +126,11 @@ type parser struct {
 	inMain    bool
 	seenMain  bool
 	seenRoot  bool
+
+	withText bool             // keep section text in Section.Blocks
+	blk      *strings.Builder // text of the block being read
+	blkKind  BlockKind
+	blkDepth int // len(path) outside the block's element
 }
 
 func (p *parser) parent() string {
@@ -170,6 +181,9 @@ func (p *parser) start(t xml.StartElement) error {
 	case name == "date" && p.parent() == "title-info":
 		p.date += attr(t, "value") + " "
 	}
+	if p.withText && p.inMain && len(p.open) > 0 && p.blk == nil {
+		p.startBlock(name)
+	}
 	if p.title != nil && (name == "p" || name == "empty-line") {
 		p.title.WriteByte(' ')
 	}
@@ -180,6 +194,9 @@ func (p *parser) start(t xml.StartElement) error {
 func (p *parser) end(name string) {
 	if len(p.path) > 0 {
 		p.path = p.path[:len(p.path)-1]
+	}
+	if p.withText {
+		p.endBlock(name)
 	}
 	switch {
 	case name == "title" && p.title != nil:
@@ -200,6 +217,9 @@ func (p *parser) end(name string) {
 }
 
 func (p *parser) text(s string) {
+	if p.blk != nil {
+		p.blk.WriteString(s)
+	}
 	switch {
 	case p.title != nil:
 		p.title.WriteString(s)
