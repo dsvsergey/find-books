@@ -157,6 +157,13 @@ func TestOfflineLibrary(t *testing.T) {
 	}
 }
 
+func TestAddArgCountError(t *testing.T) {
+	db := filepath.Join(t.TempDir(), "index.db")
+	if _, _, err := run(t, db, "add"); err == nil || !strings.Contains(err.Error(), "очікується аргументів: 1, отримано: 0") {
+		t.Fatalf("err = %v, want arg count error", err)
+	}
+}
+
 func TestSearchRequiresQuery(t *testing.T) {
 	db := filepath.Join(t.TempDir(), "index.db")
 	if _, _, err := run(t, db, "search"); err == nil {

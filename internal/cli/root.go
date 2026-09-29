@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -35,12 +36,47 @@ func (a *app) openStore() (*index.Store, error) {
 	return index.Open(p)
 }
 
+// closeStore closes st and, if the command otherwise succeeded, surfaces
+// any close error via the named return *err.
+func closeStore(st *index.Store, err *error) {
+	if cerr := st.Close(); *err == nil {
+		*err = cerr
+	}
+}
+
+// noArgs, exactArgs and maxArgs are cobra.PositionalArgs validators with
+// Ukrainian error messages (cobra's built-ins are English-only).
+func noArgs(_ *cobra.Command, args []string) error {
+	if len(args) > 0 {
+		return fmt.Errorf("команда не приймає аргументів: %s", strings.Join(args, " "))
+	}
+	return nil
+}
+
+func exactArgs(n int) cobra.PositionalArgs {
+	return func(_ *cobra.Command, args []string) error {
+		if len(args) != n {
+			return fmt.Errorf("очікується аргументів: %d, отримано: %d", n, len(args))
+		}
+		return nil
+	}
+}
+
+func maxArgs(n int) cobra.PositionalArgs {
+	return func(_ *cobra.Command, args []string) error {
+		if len(args) > n {
+			return fmt.Errorf("забагато аргументів: максимум %d, отримано: %d", n, len(args))
+		}
+		return nil
+	}
+}
+
 func NewRootCmd() *cobra.Command {
 	a := &app{}
 	root := &cobra.Command{
 		Use:           "findbooks",
 		Short:         "Пошук творів у бібліотеках електронних книг, зокрема всередині збірок",
-		Args:          cobra.NoArgs,
+		Args:          noArgs,
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, _ []string) error {

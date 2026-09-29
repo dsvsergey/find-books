@@ -20,7 +20,7 @@ func newListCmd(a *app) *cobra.Command {
 	return &cobra.Command{
 		Use:   "list",
 		Short: "Показати бібліотеки в індексі",
-		Args:  cobra.NoArgs,
+		Args:  noArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			st, err := a.openStore()
 			if err != nil {

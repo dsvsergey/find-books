@@ -15,8 +15,8 @@ func newUpdateCmd(a *app) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "update [назва]",
 		Short: "Переіндексувати змінені файли (лише на підключених дисках)",
-		Args:  cobra.MaximumNArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
+		Args:  maxArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			if all == (len(args) == 1) {
 				return errors.New("вкажіть назву бібліотеки або --all")
 			}
@@ -24,7 +24,7 @@ func newUpdateCmd(a *app) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			defer st.Close()
+			defer closeStore(st, &err)
 			var libs []index.Library
 			if all {
 				libs, err = st.Libraries()

@@ -14,8 +14,8 @@ func newAddCmd(a *app) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "add <шлях>",
 		Short: "Зареєструвати бібліотеку і проіндексувати її",
-		Args:  cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
+		Args:  exactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			loc, err := library.Locate(args[0])
 			if err != nil {
 				return err
@@ -31,7 +31,7 @@ func newAddCmd(a *app) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			defer st.Close()
+			defer closeStore(st, &err)
 			lib, err := st.AddLibrary(name, loc.VolumeID, loc.VolumeName, loc.RootRel)
 			if err != nil {
 				return err
