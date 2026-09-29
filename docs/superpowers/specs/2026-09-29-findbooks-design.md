@@ -15,16 +15,19 @@
 | Питання | Рішення |
 |---|---|
 | Інтерфейс | Cobra-команди + інтерактивний TUI (Bubble Tea / Bubbles / Lip Gloss), що запускається без аргументів |
-| Індекс | Один глобальний SQLite-файл `~/.local/share/findbooks/index.db` |
+| Індекс | Один глобальний SQLite-файл у теці даних користувача (`platform.DataDir()`: macOS/Linux — `~/.local/share/findbooks/index.db`, Windows — `%LOCALAPPDATA%\findbooks\index.db`) |
 | Рушій пошуку | SQLite FTS5 через `modernc.org/sqlite` (чистий Go, без cgo) + fuzzy-ранжування кандидатів у TUI |
 | Офлайн-диски | Пошук працює завжди; результат позначає диск як online/offline |
+| Платформи | v1 реалізує і тестує macOS; весь ОС-залежний код ізольовано в `internal/platform`, Windows/Linux — заглушки, що повертають `ErrUnsupported` (додаються наступним кроком без змін решти коду) |
 | Що індексуємо | FB2 (у т.ч. `.fb2.zip`) — метадані + твори з дерева секцій; PDF/DJVU/DOC/RTF/TXT — лише ім'я файлу та тека |
 
 ## Архітектура
 
 ```
 cmd/findbooks/        main.go: Cobra root (без аргументів → TUI)
-internal/library/     реєстр бібліотек: шлях, мітка диска (Volume UUID + назва)
+internal/platform/    ОС-залежне: VolumeID, MountPoint, Open, Reveal, DataDir
+                      (platform_darwin.go; _windows.go/_linux.go — заглушки)
+internal/library/     реєстр бібліотек: шлях, мітка диска (volume ID + назва)
 internal/scan/        обхід тек, інкрементальність (розмір + mtime), пул воркерів
 internal/fb2/         потоковий парсер FB2: title-info + дерево секцій;
                       windows-1251/koi8-r → UTF-8; .fb2.zip
@@ -33,11 +36,32 @@ internal/index/       SQLite: схема, запис, FTS5-запити, нор�
 internal/tui/         Bubble Tea: поле вводу, список результатів, панель деталей
 ```
 
-Залежності між пакетами односпрямовані: `cmd → tui, scan, index, library`; `scan → fb2, extract, index`; `extract → fb2`. `fb2` і `index` нічого не знають один про одного.
+Залежності між пакетами односпрямовані: `cmd → tui, scan, index, library`; `scan → fb2, extract, index`; `extract → fb2`; `library, tui → platform`. `fb2` і `index` нічого не знають один про одного. Жоден пакет, крім `platform`, не викликає ОС-специфічних команд і не містить build-тегів.
+
+### Пакет platform
+
+```go
+func VolumeID(path string) (id, name string, err error) // стабільний ідентифікатор тому, що містить path
+func MountPoint(volumeID string) (string, bool)         // де зараз змонтовано том; false — не підключено
+func Open(path string) error                            // відкрити у програмі за замовчуванням
+func Reveal(path string) error                          // показати у файловому менеджері
+func DataDir() (string, error)                          // тека для index.db
+```
+
+| Функція | macOS (v1) | Windows (далі) | Linux (далі) |
+|---|---|---|---|
+| VolumeID | `diskutil info -plist` → VolumeUUID | серійний номер тому (`GetVolumeInformationW`) | UUID з `/dev/disk/by-uuid` / `findmnt` |
+| MountPoint | перебір `/Volumes/*` + VolumeID | перебір букв дисків | `/proc/self/mounts` |
+| Open | `open` | `cmd /c start ""` | `xdg-open` |
+| Reveal | `open -R` | `explorer /select,` | `xdg-open <тека>` |
+| DataDir | `~/.local/share/findbooks` | `%LOCALAPPDATA%\findbooks` | `$XDG_DATA_HOME/findbooks` |
+
+Буфер обміну — кросплатформна бібліотека `atotto/clipboard` (не в `platform`).
 
 ### Модель даних
 
-- `libraries(id, name, root_rel, volume_uuid, volume_name, last_scan_at)` — `root_rel` — шлях відносно точки монтування тому; повний шлях відновлюється через пошук змонтованого тому за UUID (`diskutil info`), тож зміна точки монтування не ламає індекс.
+- `libraries(id, name, root_rel, volume_id, volume_name, last_scan_at)` — `root_rel` — шлях відносно точки монтування тому; повний шлях відновлюється через `platform.MountPoint(volume_id)`, тож зміна точки монтування (чи букви диска на Windows) не ламає індекс.
+- Усі відносні шляхи (`root_rel`, `rel_path`) зберігаються з `/` як роздільником (`filepath.ToSlash`) і перетворюються на рідні (`filepath.FromSlash`) лише при зверненні до ФС.
 - `books(id, library_id, rel_path, format, size, mtime, title, authors, year, is_collection)`
 - `works(id, book_id, title, author, tree_path)` — `tree_path`, напр. `Игорь Пидоренко › ЧУЖИЕ ДЕТИ`.
 - `works_fts` — FTS5 (external content над `works`) з нормалізованими `title`, `author`, `book_title`.
@@ -94,7 +118,7 @@ findbooks search <запит> [--author X] [--limit N] [--json]
 
 - Пошук на кожне натискання з debounce ~50 мс; FTS5 повертає до 500 кандидатів, TUI ранжує їх fuzzy-збігом (`sahilm/fuzzy`) і показує список.
 - `●` — диск підключено, `○` — ні; для офлайн-диска `enter`/`f` показують «підключіть диск <назва>».
-- `enter` → `open <файл>`; `f` → `open -R <файл>`; `c` → копіювання повного шляху в буфер (`pbcopy`); `a` → замінити запит на автора вибраного твору.
+- `enter` → `platform.Open`; `f` → `platform.Reveal`; `c` → копіювання повного шляху в буфер (`atotto/clipboard`); `a` → замінити запит на автора вибраного твору.
 
 ## Обробка помилок
 
@@ -108,9 +132,10 @@ findbooks search <запит> [--author X] [--limit N] [--json]
 - `fb2`: фікстури — UTF-8, cp1251, «Румбы»-подібна збірка (секції-автори), звичайний роман з главами, `.fb2.zip`, битий XML.
 - `extract`: табличні тести евристики на деревах секцій.
 - `index`: нормалізація (табличні тести), запис/пошук на SQLite у тимчасовому файлі, інкрементальне оновлення.
+- `platform`: інтеграційні тести darwin (VolumeID/MountPoint на корені `/`, DataDir); перевірка, що `GOOS=windows` і `GOOS=linux` компілюються.
 - `tui`: юніт-тести `Update` моделі; зовнішній вигляд — вручну.
 - Ручна перевірка на реальній бібліотеці «Советская фантастика» (час індексації, критерій успіху).
 
 ## Поза межами v1
 
-Повнотекстовий пошук по тексту книг, OCR для PDF/DJVU, редагування метаданих, стеження за змінами (watch), платформи крім macOS.
+Повнотекстовий пошук по тексту книг, OCR для PDF/DJVU, редагування метаданих, стеження за змінами (watch), реалізація `platform` для Windows/Linux (лише заглушки у v1).
