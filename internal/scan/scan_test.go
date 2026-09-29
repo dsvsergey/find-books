@@ -337,3 +337,21 @@ func TestRunReparsesAllOnExtractVersionChange(t *testing.T) {
 		t.Fatalf("following run: report = %+v", rep)
 	}
 }
+
+func TestRunSkipsWindowsSystemFolders(t *testing.T) {
+	st, lib, root := setup(t)
+	write(t, filepath.Join(root, "$RECYCLE.BIN", "S-1-5-21", "Смітник.fb2"), fixture(t, "novel.fb2"))
+	write(t, filepath.Join(root, "system volume information", "Службове.pdf"), []byte("%PDF-1.4"))
+	rep, err := Run(context.Background(), st, lib.ID, root, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if rep.Added != 5 {
+		t.Fatalf("report = %+v", rep)
+	}
+	for _, q := range []string{"смітник", "службове"} {
+		if h := hits(t, st, q); len(h) != 0 {
+			t.Errorf("%q indexed from a system folder: %+v", q, h)
+		}
+	}
+}

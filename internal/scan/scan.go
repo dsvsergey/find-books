@@ -203,7 +203,7 @@ func collect(ctx context.Context, root string, stored map[string]index.FileStamp
 			}
 			return nil
 		}
-		if p != root && strings.HasPrefix(d.Name(), ".") {
+		if p != root && (strings.HasPrefix(d.Name(), ".") || d.IsDir() && isSystemDir(d.Name())) {
 			if d.IsDir() {
 				return fs.SkipDir
 			}
@@ -233,6 +233,11 @@ func collect(ctx context.Context, root string, stored map[string]index.FileStamp
 		return nil
 	})
 	return jobs, seen, failed, err
+}
+
+// isSystemDir reports Windows system folders found on NTFS/exFAT disks.
+func isSystemDir(name string) bool {
+	return strings.EqualFold(name, "$RECYCLE.BIN") || strings.EqualFold(name, "System Volume Information")
 }
 
 func relPath(root, p string) string {
