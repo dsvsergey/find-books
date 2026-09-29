@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/spf13/cobra"
 
@@ -10,7 +11,14 @@ import (
 )
 
 func newConfigCmd() *cobra.Command {
-	cfg := &cobra.Command{Use: "config", Short: i18n.T(i18n.KeyCmdConfigShort), Args: noArgs}
+	cfg := &cobra.Command{
+		Use:   "config",
+		Short: i18n.T(i18n.KeyCmdConfigShort),
+		Args:  noArgs,
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			return cmd.Help()
+		},
+	}
 	lang := &cobra.Command{
 		Use:   "lang [en|uk]",
 		Short: i18n.T(i18n.KeyCmdConfigLangShort),
@@ -31,6 +39,11 @@ func newConfigCmd() *cobra.Command {
 			}
 			i18n.Set(l)
 			fmt.Fprintln(cmd.OutOrStdout(), i18n.T(i18n.KeyLangSaved))
+			if envVal := os.Getenv("FINDBOOKS_LANG"); envVal != "" {
+				if envLang, perr := i18n.Parse(envVal); perr != nil || envLang != l {
+					fmt.Fprintln(cmd.ErrOrStderr(), i18n.T(i18n.KeyEnvOverridesLang, envVal))
+				}
+			}
 			return nil
 		},
 	}
