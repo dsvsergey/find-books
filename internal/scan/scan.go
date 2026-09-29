@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io/fs"
+	"os"
 	"path"
 	"path/filepath"
 	"runtime"
@@ -81,16 +82,16 @@ func Run(ctx context.Context, st *index.Store, libraryID int64, root string, onP
 	if err != nil {
 		return rep, err
 	}
-	jobs, seen, err := collect(ctx, root, stored, &rep)
+	jobs, seen, failed, err := collect(ctx, root, stored, &rep)
 	if err != nil {
 		return rep, err
 	}
-	var del []int64
-	for rel, f := range stored {
-		if !seen[rel] {
-			del = append(del, f.BookID)
-		}
+	// A root that vanished mid-walk (disk ejected) would make every book look
+	// deleted; refuse to touch the index instead.
+	if err := statRoot(root); err != nil {
+		return rep, fmt.Errorf("тека бібліотеки недоступна: %w", err)
 	}
+	del := deletions(stored, seen, failed)
 	rep.Removed = len(del)
 
 	ctx, cancel := context.WithCancel(ctx)
@@ -139,8 +140,42 @@ func Run(ctx context.Context, st *index.Store, libraryID int64, root string, onP
 	return rep, st.MarkScanned(libraryID, time.Now())
 }
 
-func collect(ctx context.Context, root string, stored map[string]index.FileStamp, rep *Report) ([]job, map[string]bool, error) {
+// statRoot checks that the library root still exists; a variable for tests.
+var statRoot = defaultStatRoot
+
+func defaultStatRoot(root string) error {
+	_, err := os.Stat(root)
+	return err
+}
+
+// deletions returns the IDs of stored books that were not seen in the walk,
+// except those under a directory that could not be read (failed prefixes):
+// their files may well still exist.
+func deletions(stored map[string]index.FileStamp, seen map[string]bool, failed []string) []int64 {
+	var del []int64
+	for rel, f := range stored {
+		if seen[rel] || underAny(rel, failed) {
+			continue
+		}
+		del = append(del, f.BookID)
+	}
+	return del
+}
+
+func underAny(rel string, prefixes []string) bool {
+	for _, p := range prefixes {
+		if strings.HasPrefix(rel, p+"/") {
+			return true
+		}
+	}
+	return false
+}
+
+// collect walks root and returns the files to parse, the set of book paths
+// seen, and the rel paths of directories that could not be read.
+func collect(ctx context.Context, root string, stored map[string]index.FileStamp, rep *Report) ([]job, map[string]bool, []string, error) {
 	var jobs []job
+	var failed []string
 	seen := map[string]bool{}
 	err := filepath.WalkDir(root, func(p string, d fs.DirEntry, err error) error {
 		if ctxErr := ctx.Err(); ctxErr != nil {
@@ -150,8 +185,10 @@ func collect(ctx context.Context, root string, stored map[string]index.FileStamp
 			if p == root {
 				return err
 			}
-			rep.Errors = append(rep.Errors, FileError{RelPath: relPath(root, p), Err: err})
+			rel := relPath(root, p)
+			rep.Errors = append(rep.Errors, FileError{RelPath: rel, Err: err})
 			if d != nil && d.IsDir() {
+				failed = append(failed, rel)
 				return fs.SkipDir
 			}
 			return nil
@@ -185,7 +222,7 @@ func collect(ctx context.Context, root string, stored map[string]index.FileStamp
 		jobs = append(jobs, job{rel: rel, abs: p, format: format, size: size, mtime: mtime, existed: existed})
 		return nil
 	})
-	return jobs, seen, err
+	return jobs, seen, failed, err
 }
 
 func relPath(root, p string) string {

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -233,5 +234,74 @@ func TestRunRetriesFailedParse(t *testing.T) {
 	}
 	if h := hits(t, st, "чужие дети"); len(h) != 1 {
 		t.Fatalf("restored file was not re-parsed: %+v", h)
+	}
+}
+
+func TestRunKeepsBooksInUnreadableDir(t *testing.T) {
+	st, lib, root := setup(t)
+	if _, err := Run(context.Background(), st, lib.ID, root, nil); err != nil {
+		t.Fatal(err)
+	}
+	dir := filepath.Join(root, "Авторы", "Беляев Александр")
+	if err := os.Chmod(dir, 0); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { os.Chmod(dir, 0o755) })
+	rep, err := Run(context.Background(), st, lib.ID, root, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if rep.Removed != 0 {
+		t.Fatalf("books under an unreadable dir were removed: %+v", rep)
+	}
+	var dirErr bool
+	for _, e := range rep.Errors {
+		if e.RelPath == "Авторы/Беляев Александр" {
+			dirErr = true
+		}
+	}
+	if !dirErr {
+		t.Fatalf("unreadable dir not reported: %+v", rep.Errors)
+	}
+	for _, q := range []string{"человек амфибия", "звезда кэц"} {
+		if h := hits(t, st, q); len(h) != 1 {
+			t.Errorf("%q: %+v", q, h)
+		}
+	}
+}
+
+func TestDeletions(t *testing.T) {
+	stored := map[string]index.FileStamp{
+		"a.fb2":       {BookID: 1},
+		"dir/b.fb2":   {BookID: 2},
+		"dir/x/c.fb2": {BookID: 3},
+		"dirx/d.fb2":  {BookID: 4},
+		"kept.fb2":    {BookID: 5},
+	}
+	seen := map[string]bool{"kept.fb2": true}
+	got := deletions(stored, seen, []string{"dir"})
+	slices.Sort(got)
+	if want := []int64{1, 4}; !slices.Equal(got, want) {
+		t.Fatalf("deletions = %v, want %v", got, want)
+	}
+}
+
+func TestRunRootVanishedDeletesNothing(t *testing.T) {
+	st, lib, root := setup(t)
+	if _, err := Run(context.Background(), st, lib.ID, root, nil); err != nil {
+		t.Fatal(err)
+	}
+	// Simulate the root disappearing between the walk and the delete step.
+	statRoot = func(string) error { return os.ErrNotExist }
+	t.Cleanup(func() { statRoot = defaultStatRoot })
+	rep, err := Run(context.Background(), st, lib.ID, root, nil)
+	if err == nil || !strings.Contains(err.Error(), "тека бібліотеки недоступна") {
+		t.Fatalf("err = %v", err)
+	}
+	if rep.Removed != 0 {
+		t.Fatalf("report = %+v", rep)
+	}
+	if h := hits(t, st, "человек амфибия"); len(h) != 1 {
+		t.Fatalf("book deleted: %+v", h)
 	}
 }
