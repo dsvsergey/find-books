@@ -22,7 +22,7 @@ var (
 	styleError    = lipgloss.NewStyle().Foreground(lipgloss.Color("196"))
 )
 
-const helpLine = "enter відкрити · ctrl+o показати у Finder · ctrl+y копіювати шлях · tab за автором · ↑/↓ вибір · esc вихід"
+const helpLine = "enter відкрити · ctrl+l бібліотеки · ctrl+o показати у Finder · ctrl+y копіювати шлях · tab за автором · ↑/↓ вибір · esc вихід"
 
 func (m Model) View() tea.View {
 	v := tea.NewView(m.render())
@@ -31,6 +31,9 @@ func (m Model) View() tea.View {
 }
 
 func (m Model) render() string {
+	if m.screen == screenLibraries {
+		return m.renderLibraries()
+	}
 	w := m.width
 	if w <= 0 {
 		w = 100

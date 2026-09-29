@@ -1,6 +1,8 @@
 package tui
 
 import (
+	"context"
+	"errors"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -9,6 +11,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 
 	"findbooks/internal/index"
+	"findbooks/internal/scan"
 )
 
 type fakeSearcher struct {
@@ -24,6 +27,16 @@ func (f *fakeSearcher) Search(q index.Query) ([]index.Hit, error) {
 
 func (f *fakeSearcher) BookWorks(id int64) ([]string, error) { return f.toc[id], nil }
 
+func (f *fakeSearcher) Libraries() ([]index.Library, error) { return nil, nil }
+func (f *fakeSearcher) TotalWorks() (int, error)            { return 0, nil }
+func (f *fakeSearcher) RemoveLibrary(string) error          { return nil }
+func (f *fakeSearcher) AddFolder(context.Context, string, func(scan.Progress)) (index.Library, scan.Report, error) {
+	return index.Library{}, scan.Report{}, errors.New("not used")
+}
+func (f *fakeSearcher) Rescan(context.Context, index.Library, func(scan.Progress)) (scan.Report, error) {
+	return scan.Report{}, errors.New("not used")
+}
+
 type recorder struct {
 	online                   bool
 	missing                  bool // files do not exist on the (fake) disk
@@ -38,10 +51,11 @@ func (r *recorder) actions() Actions {
 			}
 			return filepath.Join("/Volumes", vol, rootRel), true
 		},
-		Open:   func(p string) error { r.opened = append(r.opened, p); return nil },
-		Reveal: func(p string) error { r.revealed = append(r.revealed, p); return nil },
-		Copy:   func(p string) error { r.copied = append(r.copied, p); return nil },
-		Exists: func(string) bool { return !r.missing },
+		Open:         func(p string) error { r.opened = append(r.opened, p); return nil },
+		Reveal:       func(p string) error { r.revealed = append(r.revealed, p); return nil },
+		Copy:         func(p string) error { r.copied = append(r.copied, p); return nil },
+		Exists:       func(string) bool { return !r.missing },
+		ChooseFolder: func(string) (string, error) { return "", errors.New("not used") },
 	}
 }
 
@@ -252,7 +266,7 @@ func TestViewShowsDetails(t *testing.T) {
 func TestMissingFileShowsStatus(t *testing.T) {
 	m, _, rec := newModel(true)
 	rec.missing = true
-	m = New(m.src, rec.actions(), 1234)
+	m = New(m.b, rec.actions(), 1234)
 	tm, _ := typeText(m, "чужие дети")
 	tm = settle(t, tm)
 	for _, k := range []tea.KeyPressMsg{{Code: tea.KeyEnter}, {Code: 'o', Mod: tea.ModCtrl}, {Code: 'y', Mod: tea.ModCtrl}} {
@@ -263,6 +277,13 @@ func TestMissingFileShowsStatus(t *testing.T) {
 	}
 	if len(rec.opened)+len(rec.revealed)+len(rec.copied) != 0 {
 		t.Fatalf("action called for a missing file: %q %q %q", rec.opened, rec.revealed, rec.copied)
+	}
+}
+
+func TestSearchHelpMentionsLibraries(t *testing.T) {
+	m, _, _ := newModel(true)
+	if !strings.Contains(m.View().Content, "ctrl+l") {
+		t.Fatal("search help must mention ctrl+l")
 	}
 }
 

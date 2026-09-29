@@ -1,15 +1,18 @@
-// Package tui is the interactive search screen.
+// Package tui is the interactive search screen and the libraries screen.
 package tui
 
 import (
+	"context"
 	"fmt"
 	"time"
 
+	"charm.land/bubbles/v2/progress"
 	"charm.land/bubbles/v2/textinput"
 	tea "charm.land/bubbletea/v2"
 
 	"findbooks/internal/index"
 	"findbooks/internal/library"
+	"findbooks/internal/scan"
 )
 
 type Searcher interface {
@@ -17,18 +20,39 @@ type Searcher interface {
 	BookWorks(bookID int64) ([]string, error)
 }
 
-// Actions are the side effects the screen triggers; tests replace them.
+// Backend is everything the screens need from the index.
+type Backend interface {
+	Searcher
+	Libraries() ([]index.Library, error)
+	TotalWorks() (int, error)
+	RemoveLibrary(name string) error
+	// AddFolder registers dir as a library and runs its first scan. A
+	// returned library with ID != 0 was registered even when err != nil.
+	AddFolder(ctx context.Context, dir string, onProgress func(scan.Progress)) (index.Library, scan.Report, error)
+	// Rescan updates a registered library.
+	Rescan(ctx context.Context, lib index.Library, onProgress func(scan.Progress)) (scan.Report, error)
+}
+
+// Actions are the side effects the screens trigger; tests replace them.
 type Actions struct {
-	Root   func(volumeID, rootRel string) (string, bool)
-	Open   func(path string) error
-	Reveal func(path string) error
-	Copy   func(text string) error
-	Exists func(path string) bool // does the file exist on the mounted disk
+	Root         func(volumeID, rootRel string) (string, bool)
+	Open         func(path string) error
+	Reveal       func(path string) error
+	Copy         func(text string) error
+	Exists       func(path string) bool // does the file exist on the mounted disk
+	ChooseFolder func(prompt string) (string, error)
 }
 
 const (
 	debounce       = 50 * time.Millisecond
 	candidateLimit = 500
+)
+
+type screen int
+
+const (
+	screenSearch screen = iota
+	screenLibraries
 )
 
 type searchMsg struct{ seq int }
@@ -41,9 +65,12 @@ type resultsMsg struct {
 }
 
 type Model struct {
-	src      Searcher
-	act      Actions
-	total    int
+	b      Backend
+	act    Actions
+	total  int
+	screen screen
+
+	// search screen
 	input    textinput.Model
 	hits     []index.Hit
 	cursor   int
@@ -51,27 +78,47 @@ type Model struct {
 	searched bool
 	online   map[string]bool    // volume id -> mounted
 	toc      map[int64][]string // book id -> work titles (cache)
-	status   string
 	err      error
-	width    int
-	height   int
+
+	// libraries screen
+	libs          []index.Library
+	libOnline     map[string]bool
+	libCursor     int
+	confirmDelete bool
+	job           *job
+	bar           progress.Model
+
+	status string
+	width  int
+	height int
 }
 
-func New(src Searcher, act Actions, total int) Model {
+// New builds the UI; with an empty index (total == 0) it opens on the
+// libraries screen.
+func New(b Backend, act Actions, total int) Model {
 	in := textinput.New()
 	in.Prompt = "🔎 "
 	in.Placeholder = "назва твору, автор або збірка…"
 	in.Focus()
-	return Model{src: src, act: act, total: total, input: in, online: map[string]bool{}, toc: map[int64][]string{}}
+	m := Model{
+		b: b, act: act, total: total, input: in,
+		online: map[string]bool{}, toc: map[int64][]string{}, libOnline: map[string]bool{},
+		bar: progress.New(progress.WithDefaultBlend(), progress.WithWidth(40)),
+	}
+	if total == 0 {
+		m.screen = screenLibraries
+	}
+	return m
 }
 
-func (m Model) Init() tea.Cmd { return nil }
+func (m Model) Init() tea.Cmd { return m.loadLibraries() }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.width, m.height = msg.Width, msg.Height
 		m.input.SetWidth(max(10, msg.Width-20))
+		m.bar.SetWidth(min(60, max(10, msg.Width-20)))
 		return m, nil
 	case searchMsg:
 		if msg.seq != m.seq {
@@ -89,10 +136,19 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.online = msg.online
 		m.loadTOC()
 		return m, nil
+	case librariesMsg, folderMsg, progressMsg, jobDoneMsg, removedMsg:
+		return m.updateLibraries(msg)
 	case tea.KeyPressMsg:
+		if m.screen == screenLibraries {
+			return m.libraryKey(msg)
+		}
 		switch msg.String() {
 		case "esc", "ctrl+c":
 			return m, tea.Quit
+		case "ctrl+l":
+			m.screen = screenLibraries
+			m.status = ""
+			return m, m.loadLibraries()
 		case "up", "ctrl+p":
 			m.move(-1)
 			return m, nil
@@ -117,6 +173,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 	}
+	if m.screen != screenSearch {
+		return m, nil
+	}
 	before := m.input.Value()
 	var cmd tea.Cmd
 	m.input, cmd = m.input.Update(msg)
@@ -135,10 +194,10 @@ func (m *Model) queueSearch() tea.Cmd {
 }
 
 func (m Model) searchCmd(seq int, q string) tea.Cmd {
-	src := m.src
+	b := m.b
 	root := m.act.Root
 	return func() tea.Msg {
-		hits, err := src.Search(index.Query{Text: q, Limit: candidateLimit})
+		hits, err := b.Search(index.Query{Text: q, Limit: candidateLimit})
 		online := map[string]bool{}
 		for _, h := range hits {
 			if _, seen := online[h.VolumeID]; !seen {
@@ -195,7 +254,7 @@ func (m *Model) loadTOC() {
 	if _, ok := m.toc[h.BookID]; ok {
 		return
 	}
-	if titles, err := m.src.BookWorks(h.BookID); err == nil {
+	if titles, err := m.b.BookWorks(h.BookID); err == nil {
 		m.toc[h.BookID] = titles
 	}
 }
