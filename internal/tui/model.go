@@ -85,6 +85,8 @@ type Model struct {
 	libOnline     map[string]bool
 	libCursor     int
 	confirmDelete bool
+	choosing      bool // waiting for the Finder folder dialog to resolve
+	quitting      bool // ctrl+c pressed during a job; quit once it stops
 	job           *job
 	bar           progress.Model
 
@@ -138,6 +140,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 	case librariesMsg, folderMsg, progressMsg, jobDoneMsg, removedMsg:
 		return m.updateLibraries(msg)
+	case quitTimeoutMsg:
+		return m, tea.Quit
 	case tea.KeyPressMsg:
 		if m.screen == screenLibraries {
 			return m.libraryKey(msg)

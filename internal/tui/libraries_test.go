@@ -2,6 +2,7 @@ package tui
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"slices"
 	"strings"
@@ -298,5 +299,185 @@ func TestUpdateReportsCounts(t *testing.T) {
 	st := m.(Model).status
 	if !strings.Contains(st, "оновлено 1") || !strings.Contains(st, "без змін 5546") || !strings.Contains(st, "проблемних файлів: 1") {
 		t.Fatalf("status = %q", st)
+	}
+}
+
+// --- fix round 1: guard against concurrent jobs ---
+
+func TestChoosingBlocksOtherKeys(t *testing.T) {
+	fb := &fakeLibs{libs: []index.Library{fantastika}, total: 23251}
+	rescanCalled := false
+	fb.rescanFn = func(context.Context, index.Library, func(scan.Progress)) (scan.Report, error) {
+		rescanCalled = true
+		return scan.Report{}, nil
+	}
+	m := libModel(fb, 23251, "/Volumes/dsvDev/Книги", nil)
+	m, cmd := press(m, "ctrl+l")
+	m = drain(t, m, cmd)
+
+	m, chooseCmd := press(m, "a")
+	if chooseCmd == nil {
+		t.Fatal("a must start the folder chooser")
+	}
+	if !m.(Model).choosing {
+		t.Fatal("choosing must be set while the dialog is pending")
+	}
+
+	m, uCmd := press(m, "u")
+	if uCmd != nil || rescanCalled {
+		t.Fatal("keys other than ctrl+c must be ignored while the folder dialog is pending")
+	}
+
+	m, escCmd := press(m, "esc")
+	if escCmd != nil || m.(Model).screen != screenLibraries {
+		t.Fatal("esc must be ignored (not leave the screen) while the folder dialog is pending")
+	}
+
+	if _, ccCmd := press(m, "ctrl+c"); !isQuit(ccCmd) {
+		t.Fatal("ctrl+c must still quit while the folder dialog is pending")
+	}
+}
+
+func TestFolderMsgIgnoredWhileJobRunning(t *testing.T) {
+	fb := &fakeLibs{libs: []index.Library{fantastika}, total: 23251}
+	fb.rescanFn = func(ctx context.Context, _ index.Library, on func(scan.Progress)) (scan.Report, error) {
+		<-ctx.Done()
+		return scan.Report{}, ctx.Err()
+	}
+	m := libModel(fb, 23251, "", nil)
+	m, cmd := press(m, "ctrl+l")
+	m = drain(t, m, cmd)
+	m, _ = press(m, "u")
+	realJob := m.(Model).job
+	if realJob == nil {
+		t.Fatal("job must be running")
+	}
+
+	m, _ = m.Update(folderMsg{path: "/Volumes/dsvDev/Інша"})
+	mm := m.(Model)
+	if mm.job != realJob {
+		t.Fatal("a folderMsg must not replace a job that is already running")
+	}
+	if len(fb.added) != 0 {
+		t.Fatalf("folderMsg must not start AddFolder while a job is running: added = %q", fb.added)
+	}
+}
+
+func TestStaleJobDoneMsgIgnored(t *testing.T) {
+	fb := &fakeLibs{libs: []index.Library{fantastika}, total: 23251}
+	fb.rescanFn = func(ctx context.Context, _ index.Library, on func(scan.Progress)) (scan.Report, error) {
+		<-ctx.Done()
+		return scan.Report{}, ctx.Err()
+	}
+	m := libModel(fb, 23251, "", nil)
+	m, cmd := press(m, "ctrl+l")
+	m = drain(t, m, cmd)
+	m, _ = press(m, "u")
+	mm := m.(Model)
+	realJob := mm.job
+	if realJob == nil {
+		t.Fatal("job must be running")
+	}
+	before := mm.status
+
+	// A jobDoneMsg tagged with a different *job simulates a message that
+	// crossed over from an earlier, already-superseded job.
+	other := &job{name: "stale"}
+	m, _ = m.Update(jobDoneMsg{j: other, name: "stale", err: errors.New("boom")})
+	mm = m.(Model)
+	if mm.status != before {
+		t.Fatalf("status changed from a stale jobDoneMsg: %q", mm.status)
+	}
+	if mm.job != realJob {
+		t.Fatal("the current job must be kept when a stale jobDoneMsg arrives")
+	}
+}
+
+// --- fix round 1: quitting mid-job waits for the scan to stop ---
+
+func TestCtrlCDuringJobWaitsForStop(t *testing.T) {
+	fb := &fakeLibs{}
+	fb.addFn = func(ctx context.Context, _ string, on func(scan.Progress)) (index.Library, scan.Report, error) {
+		on(scan.Progress{Done: 1, Total: 10})
+		<-ctx.Done()
+		return index.Library{ID: 7, Name: "Книги"}, scan.Report{}, ctx.Err()
+	}
+	m := libModel(fb, 0, "/Volumes/dsvDev/Книги", nil)
+	m, cmd := press(m, "a")
+	m, cmd = m.Update(cmd()) // folderMsg → job started, cmd listens
+	m, cmd = m.Update(cmd()) // progressMsg, cmd listens again
+
+	m, ccCmd := press(m, "ctrl+c")
+	if isQuit(ccCmd) {
+		t.Fatal("ctrl+c during a job must not quit immediately")
+	}
+	if !m.(Model).quitting {
+		t.Fatal("quitting must be set while the job stops")
+	}
+	if m.(Model).job == nil {
+		t.Fatal("the job must stay tracked until it actually finishes")
+	}
+
+	_, doneCmd := m.Update(cmd()) // jobDoneMsg, delivered once the canceled job returns
+	if !isQuit(doneCmd) {
+		t.Fatal("the pending jobDoneMsg must quit once ctrl+c requested it")
+	}
+}
+
+func TestCtrlCWithoutJobQuitsImmediately(t *testing.T) {
+	fb := &fakeLibs{libs: []index.Library{fantastika}, total: 23251}
+	m := libModel(fb, 23251, "", nil)
+	m, cmd := press(m, "ctrl+l")
+	m = drain(t, m, cmd)
+	if _, cmd := press(m, "ctrl+c"); !isQuit(cmd) {
+		t.Fatal("ctrl+c without a running job must quit immediately")
+	}
+}
+
+// --- fix round 1: cheap fixes ---
+
+func TestUkrainianGActsLikeU(t *testing.T) {
+	fb := &fakeLibs{libs: []index.Library{fantastika}, total: 23251}
+	called := false
+	fb.rescanFn = func(context.Context, index.Library, func(scan.Progress)) (scan.Report, error) {
+		called = true
+		return scan.Report{}, nil
+	}
+	m := libModel(fb, 23251, "", nil)
+	m, cmd := press(m, "ctrl+l")
+	m = drain(t, m, cmd)
+	m, cmd = press(m, "г")
+	m = drain(t, m, cmd)
+	if !called {
+		t.Fatal("г must act like u (rescan)")
+	}
+}
+
+func TestAddFailsAfterRegisterShowsResumeHint(t *testing.T) {
+	fb := &fakeLibs{}
+	fb.addFn = func(context.Context, string, func(scan.Progress)) (index.Library, scan.Report, error) {
+		return index.Library{ID: 9, Name: "Книги"}, scan.Report{}, errors.New("диск зник")
+	}
+	m := libModel(fb, 0, "/Volumes/dsvDev/Книги", nil)
+	m, cmd := press(m, "a")
+	m = drain(t, m, cmd)
+	if !strings.Contains(m.(Model).status, "натисніть u") {
+		t.Fatalf("status = %q", m.(Model).status)
+	}
+}
+
+func TestAddCanceledBeforeRegistering(t *testing.T) {
+	fb := &fakeLibs{}
+	fb.addFn = func(ctx context.Context, _ string, on func(scan.Progress)) (index.Library, scan.Report, error) {
+		<-ctx.Done()
+		return index.Library{}, scan.Report{}, ctx.Err()
+	}
+	m := libModel(fb, 0, "/Volumes/dsvDev/Книги", nil)
+	m, cmd := press(m, "a")
+	m, cmd = m.Update(cmd()) // folderMsg → job started, cmd listens
+	m, _ = press(m, "esc")   // cancels before AddFolder returns a library
+	m, _ = m.Update(cmd())   // jobDoneMsg after cancel
+	if !strings.Contains(m.(Model).status, "Додавання «Книги» перервано") {
+		t.Fatalf("status = %q", m.(Model).status)
 	}
 }
