@@ -7,11 +7,13 @@ import (
 
 	"charm.land/bubbles/v2/progress"
 	"charm.land/bubbles/v2/textinput"
+	"charm.land/bubbles/v2/viewport"
 	tea "charm.land/bubbletea/v2"
 
 	"findbooks/internal/i18n"
 	"findbooks/internal/index"
 	"findbooks/internal/library"
+	"findbooks/internal/preview"
 	"findbooks/internal/scan"
 )
 
@@ -46,6 +48,8 @@ type Actions struct {
 	// function that always returns "". Used to detect that FINDBOOKS_LANG
 	// overrides the setting SaveLang just persisted.
 	Getenv func(string) string
+	// Preview loads the text of the work h from the file at path.
+	Preview func(path string, h index.Hit) (preview.Doc, error)
 }
 
 const (
@@ -64,6 +68,7 @@ type screen int
 const (
 	screenSearch screen = iota
 	screenLibraries
+	screenPreview
 )
 
 type searchMsg struct{ seq int }
@@ -107,6 +112,14 @@ type Model struct {
 	job           *job
 	bar           progress.Model
 
+	// preview screen
+	pv        preview.Doc
+	pvHit     index.Hit
+	pvPath    string
+	pvView    viewport.Model
+	pvSeq     int  // only the previewMsg with this seq is applied
+	pvLoading bool // a preview load for pvSeq is in flight
+
 	status string
 	width  int
 	height int
@@ -139,6 +152,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.width, m.height = msg.Width, msg.Height
 		m.input.SetWidth(max(10, msg.Width-20))
 		m.bar.SetWidth(min(60, max(10, msg.Width-20)))
+		m.layoutPreview()
 		return m, nil
 	case searchMsg:
 		if msg.seq != m.seq {
@@ -158,6 +172,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 	case librariesMsg, folderMsg, progressMsg, jobDoneMsg, removedMsg:
 		return m.updateLibraries(msg)
+	case previewMsg:
+		return m.previewLoaded(msg), nil
 	case quitTimeoutMsg:
 		return m, tea.Quit
 	case langSavedMsg:
@@ -173,8 +189,19 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 	case tea.KeyPressMsg:
+		if m.screen == screenPreview {
+			return m.previewKey(msg)
+		}
 		if m.screen == screenLibraries {
 			return m.libraryKey(msg)
+		}
+		if m.pvLoading { // any key abandons a pending preview; esc only that
+			m.pvLoading = false
+			m.pvSeq++
+			m.status = ""
+			if msg.String() == "esc" {
+				return m, nil
+			}
 		}
 		switch msg.String() {
 		case "esc", "ctrl+c":
@@ -185,6 +212,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, m.loadLibraries()
 		case "ctrl+g":
 			return m, m.toggleLang()
+		case "ctrl+r":
+			return m, m.openPreview()
 		case "up", "ctrl+p":
 			m.move(-1)
 			return m, nil
@@ -279,16 +308,28 @@ func (m *Model) withFile(fn func(string) error, okStatus string) {
 	if h == nil {
 		return
 	}
+	if p, ok := m.filePath(*h); ok {
+		m.runOn(fn, p, okStatus)
+	}
+}
+
+// filePath resolves h's file on its mounted disk; when the disk is offline
+// or the file is gone it sets the status and returns false.
+func (m *Model) filePath(h index.Hit) (string, bool) {
 	root, ok := m.act.Root(h.VolumeID, h.RootRel)
 	if !ok {
 		m.status = i18n.T(i18n.KeyDiskOfflineOpen, h.VolumeName)
-		return
+		return "", false
 	}
 	p := library.FilePath(root, h.RelPath)
 	if !m.act.Exists(p) {
 		m.status = i18n.T(i18n.KeyFileNotFound, h.RelPath)
-		return
+		return "", false
 	}
+	return p, true
+}
+
+func (m *Model) runOn(fn func(string) error, p, okStatus string) {
 	if err := fn(p); err != nil {
 		m.status = i18n.T(i18n.KeyErrorStatus, err.Error())
 		return

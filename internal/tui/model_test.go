@@ -12,6 +12,7 @@ import (
 
 	"findbooks/internal/i18n"
 	"findbooks/internal/index"
+	"findbooks/internal/preview"
 	"findbooks/internal/scan"
 )
 
@@ -43,6 +44,9 @@ type recorder struct {
 	missing                  bool // files do not exist on the (fake) disk
 	opened, revealed, copied []string
 	saved                    []i18n.Lang
+	doc                      preview.Doc
+	previewErr               error
+	previewed                []string
 }
 
 func (r *recorder) actions() Actions {
@@ -59,6 +63,10 @@ func (r *recorder) actions() Actions {
 		Exists:       func(string) bool { return !r.missing },
 		ChooseFolder: func(string) (string, error) { return "", errors.New("not used") },
 		SaveLang:     func(l i18n.Lang) error { r.saved = append(r.saved, l); return nil },
+		Preview: func(p string, _ index.Hit) (preview.Doc, error) {
+			r.previewed = append(r.previewed, p)
+			return r.doc, r.previewErr
+		},
 	}
 }
 
@@ -67,11 +75,13 @@ var (
 		WorkID: 1, Title: "ЧУЖИЕ ДЕТИ", Author: "Игорь Пидоренко", TreePath: "Игорь Пидоренко › ЧУЖИЕ ДЕТИ",
 		BookID: 10, BookTitle: "Румбы фантастики. 1988 год. Том II", BookYear: "1988", IsCollection: true,
 		RelPath: "Сборники/Румбы.fb2", LibraryName: "Фантастика", VolumeID: "dsvDev", VolumeName: "dsvDev", RootRel: "Бібліотека",
+		Format: "fb2",
 	}
 	planet = index.Hit{
 		WorkID: 2, Title: "Дети чужой планеты", Author: "Иван Петров", TreePath: "Дети чужой планеты",
 		BookID: 11, BookTitle: "Дети чужой планеты", RelPath: "Петров/Дети.fb2",
 		LibraryName: "Фантастика", VolumeID: "dsvDev", VolumeName: "dsvDev", RootRel: "Бібліотека",
+		Format: "fb2",
 	}
 )
 

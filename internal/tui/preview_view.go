@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"fmt"
 	"strings"
 	"unicode/utf8"
 
@@ -87,4 +88,42 @@ func renderBlocks(blocks []fb2.Block, width int) string {
 		}
 	}
 	return strings.Join(out, "\n")
+}
+
+func (m Model) renderPreview() string {
+	w := m.width
+	if w <= 0 {
+		w = 100
+	}
+	h := m.pvHit
+	head := m.pv.Title
+	if m.pv.Author != "" {
+		head += " — " + m.pv.Author
+	}
+	where := h.BookTitle
+	if h.BookYear != "" {
+		where += " (" + h.BookYear + ")"
+	}
+	if h.IsCollection {
+		where += " › " + h.TreePath
+	}
+	volume := "  [" + h.VolumeName + " "
+	sep := styleDim.Render(strings.Repeat("─", w)) + "\n"
+	var b strings.Builder
+	b.WriteString(styleTitle.Render(ansi.Truncate(head, w, "…")) + "\n")
+	b.WriteString(styleDim.Render(ansi.Truncate(where, max(10, w-lipgloss.Width(volume)-2), "…")+volume) +
+		m.mark(h.VolumeID) + styleDim.Render("]") + "\n")
+	b.WriteString(sep)
+	if m.pv.Stale {
+		b.WriteString(styleStatus.Render(ansi.Truncate(i18n.T(i18n.KeyPreviewStale), w, "…")) + "\n")
+	}
+	b.WriteString(m.pvView.View() + "\n")
+	b.WriteString(sep)
+	if m.status != "" {
+		b.WriteString(styleStatus.Render(ansi.Truncate(m.status, w, "…")))
+	} else {
+		help := fmt.Sprintf("%d%% · ", int(m.pvView.ScrollPercent()*100)) + i18n.T(i18n.KeyLangToggle) + " · " + i18n.T(i18n.KeyPreviewHelp)
+		b.WriteString(styleDim.Render(ansi.Truncate(help, w, "…")))
+	}
+	return b.String()
 }
